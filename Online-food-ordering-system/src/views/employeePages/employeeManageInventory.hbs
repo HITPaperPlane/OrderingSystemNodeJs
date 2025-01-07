@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Inventory</title>
+</head>
+
+<body>
+    {{>navbar loginUser=loginUser}}
+
+    <section>
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-3">
+                    <!-- Sidebar -->
+                    {{>sidebar}}
+                </div>
+                <div class="col-md-9">
+                    <div class="employeePanel card">
+                        <div class="text-center my-3">
+                            <h3><span class="primary-color">FOODIES</span> Manage Inventory</h3>
+                        </div>
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Dish Name</th>
+                                    <th>Available Quantity</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {{#each dishes}}
+                                <tr>
+                                    <td>{{this.dname}}</td>
+                                    <td>{{this.dserve}}</td>
+                                    <td>
+                                        {{#if (eq this.dserve 0)}}
+                                            <button class="btn btn-sm btn-secondary" disabled>Out of Stock</button>
+                                        {{else}}
+                                            <button class="btn btn-sm btn-danger" onclick="markOutOfStock('{{this._id}}')">Mark Out of Stock</button>
+                                        {{/if}}
+                                    </td>
+                                </tr>
+                                {{/each}}
+                            </tbody>
+                        </table>
+
+                        <nav aria-label="Page navigation example" class="mt-3 mb-5">
+                            <ul class="pagination justify-content-end">
+                                <li class="page-item">
+                                    <a class="page-link {{#ifprev currentPage}}"disabled"{{/ifprev}}" href="/employee/markOutOfStock/{{#prevPage currentPage}}{{/prevPage}}" aria-label="Previous">
+                                        <span aria-hidden="true">&laquo;</span>
+                                        <span class="sr-only">Previous</span>
+                                    </a>
+                                </li>
+                                {{#times count}}
+                                <li class="page-item {{#active this currentPage}}{{/active}}"><a class="page-link" href="/employee/markOutOfStock/{{this}}">{{this}}</a></li>
+                                {{/times}}
+                                <li class="page-item">
+                                    <a class="page-link {{#ifnext currentPage count}}"disabled"{{/ifnext}}" href="/employee/markOutOfStock/{{#nextPage currentPage}}{{/nextPage}}" aria-label="Next">
+                                        <span aria-hidden="true">&raquo;</span>
+                                        <span class="sr-only">Next</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        function markOutOfStock(dishId) {
+            Swal.fire({
+                title: 'Mark as Out of Stock?',
+                text: "Are you sure you want to mark this dish as out of stock?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, mark it!',
+                cancelButtonText: 'No, cancel!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        type: 'POST',
+                        url: '/employee/markOutOfStock',
+                        data: { dishId: dishId },
+                        success: function (response) {
+                            Swal.fire('Marked!', response.message, 'success').then(() => {
+                                location.reload();
+                            });
+                        },
+                        error: function (xhr) {
+                            Swal.fire('Error!', xhr.responseJSON.message, 'error');
+                        }
+                    });
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>

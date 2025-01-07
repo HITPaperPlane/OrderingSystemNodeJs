@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Node.js CRUD Example</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <img src="/logo.png" alt="Logo" style="width: 100px; height: auto;">
+  <h1>User List</h1>
+  <form action="/add" method="POST">
+    <input type="text" name="name" placeholder="Name" required>
+    <input type="email" name="email" placeholder="Email" required>
+    <button type="submit">Add User</button>
+  </form>
+  <ul>
+    {{#each users}}
+      <li>
+        {{this.name}} - {{this.email}} 
+        <a href="/edit/{{this.id}}">Edit</a>
+        <a href="/delete/{{this.id}}">Delete</a>
+      </li>
+    {{/each}}
+  </ul>
+</body>
+</html>

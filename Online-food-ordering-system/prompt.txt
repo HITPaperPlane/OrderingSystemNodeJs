@@ -1,0 +1,1421 @@
+read：
+this is a Food Ordering System, Now I want to add an employee status(now there are users and admin), the specific functions of the employee are as follows. 
+
+Employees Receive Detailed Order Notifications: Details of each order, including pick-up time, special requests, and customer name, are notified to employees through the system.
+
+Employees Prioritize Orders by Pick-up Time: The system prioritizes orders by pick-up time, and employees process them in sequence. 
+
+Employees View and Handle Special Needs: Special requests or dietary restrictions are prominently displayed in order details to prevent erroneous production.
+
+Employees Access Historical Order Records: Access the "Order History" section in the system to view all historical orders organized by date and time. 
+
+Employees Mark Out-of-Stock Dishes: Update inventory status in real time, and out-of-stock dishes are immediately hidden on the client side. 
+
+Employees mark order status: Mark the order as "in progress" or "completed", and the system automatically updates the status and notifies the user. 
+
+Employees prioritize urgent orders: The system sorts orders according to the pickup time to ensure that urgent orders are completed first. 
+
+now you should modify and add some code base current code,current code have many error,note: The format of the return code is the file name and the full code of the modified/added file:
+
+src\modul\dish.js
+const mongoose = require("mongoose");
+const dish = mongoose.Schema({
+    dname: String,
+    dtype: String,
+    dprice: Number,
+    dtime: String,
+    photo: String,
+    discription: String,
+    ddiscount: Number,
+    dserve: Number,
+    availability: { type: Boolean, default: true } // New field to manage availability
+});
+
+module.exports = mongoose.model("dish", dish);
+src\modul\order.js
+const mongoose = require('mongoose');
+const order = mongoose.Schema({
+    dishId: String,
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'user' }, // Reference to User model
+    time: String, // Order placement time
+    pickUpTime: String, // New field for pick-up time
+    photo: String,
+    dname: String,
+    price: Number,
+    quantity: Number,
+    paymentType: String,
+    states: String,
+    user: Object,
+    specialRequests: String // New field for special requests
+});
+
+module.exports = mongoose.model("orders", order);
+src\modul\user.js
+const mongoose = require('mongoose');
+
+const User = mongoose.Schema({
+    name: String,
+    email: String,
+    phone: String,
+    password: String,
+    address: String,
+    type: {
+        type: String,
+        enum: ['normal', 'admin', 'employee'],
+        default: 'normal'
+    },
+    notifications: [{
+        message: String,
+        date: { type: Date, default: Date.now },
+        read: { type: Boolean, default: false }
+    }]
+});
+
+module.exports = mongoose.model("user", User);
+src\routers\main.js
+const { Router } = require('express');
+const express = require('express');
+const session = require('express-session')
+const route = express.Router();
+const path = require('path');
+const User = require('../modul/user')
+const dish = require("../modul/dish");
+const order = require('../modul/order')
+const { __express } = require('hbs');
+const { restart } = require('nodemon');
+const fs = require('fs')
+
+route.get("/", (req, res) => {
+    const loginUser = req.session.loginUser;
+    res.render("index", {
+        loginUser: loginUser
+    })
+})
+route.get("/register", (req, res) => {
+    const loginUser = req.session.loginUser;
+    res.render("registration", {
+        loginUser: loginUser
+    })
+})
+route.get('/login', (req, res) => {
+    const loginUser = req.session.loginUser;
+    res.render("login", {
+        loginUser: loginUser
+    })
+})
+//food page normal user
+route.get("/foods/:page", async (req, res) => {
+    const loginUser = req.session.loginUser;
+    let currentPage = 1;
+    let page = req.params.page;
+    if (page)
+        currentPage = page;
+    const total = 6;
+    const start = (currentPage - 1) * total;
+    const foods = await dish.find().skip(start).limit(total);
+    const count = Math.ceil(await dish.find().countDocuments() / total);
+
+    console.log(count + " :=> " + foods);
+    res.render("showDishes", {
+        loginUser: loginUser,
+        foods: foods,
+        count: count,
+        currentPage: currentPage
+
+    })
+})
+route.post("/saveRegistration", async (req, res) => {
+    const data = await User.create(req.body)
+    res.render("login",{
+        newRegister:true
+    })
+})
+
+route.post("/loginUser", async (req, res) => {
+    const data = await User.findOne(req.body);
+    console.log(data);
+
+    if (data == null) {
+        console.log("invalid passward or email");
+        res.render("login", {
+            invalid: true,
+            email: req.body.email
+        })
+    }
+    else {
+        req.session.loginUser = data;
+        console.log('login user name : ' + req.session.loginUser.name);
+        res.redirect("/dashboard");
+    }
+})
+
+route.get("/dashboard", (req, res) => {
+    if (req.session.loginUser) {
+        const loginUser = req.session.loginUser;
+        if (loginUser.type === 'normal') {
+            console.log("normal user")
+            res.render("normalPages/normalDashboard", {
+                loginUser: loginUser
+            });
+        } else if (loginUser.type === 'admin') {
+            console.log('admin user');
+            res.render("adminPages/adminDashboard", {
+                loginUser: loginUser
+            });
+        } else if (loginUser.type === 'employee') {
+            console.log('employee user');
+            res.render("employeePages/employeeDashboard", { // New Employee Dashboard
+                loginUser: loginUser
+            });
+        }
+    } else {
+        res.render("login", {
+            loginFirst: true
+        });
+    }
+});
+
+route.get("/admin/addDish", (req, res) => {
+    if (req.session.loginUser) {
+        const loginUser = req.session.loginUser;
+
+        if (loginUser.type == "admin") {
+            res.render("adminPages/adminAddNewDish", {
+                loginUser: loginUser
+            })
+        } else {
+            res.send(`<h1>Something Wrong !!</h1> <h2>Opps! you can not acess this page..</h2>`)
+        }
+    } else
+        res.render("login", {
+            loginFirst: true
+        })
+})
+
+//this get method for show food table in admin pannel
+route.get("/admin/dishMenus/:page", async function (req, res) {
+    if (req.session.loginUser) {
+        const loginUser = req.session.loginUser;
+        let currentPage = 1;
+        let page = req.params.page;
+        if (page)
+            currentPage = page;
+        const total = 6;
+        const start = (currentPage - 1) * total;
+        const data = await dish.find().skip(start).limit(total);
+        const newObject = Object.assign({}, data, { currentPage: currentPage })
+        const totalPage = Math.ceil(await dish.find().countDocuments() / total)
+        if (loginUser.type == "admin") {
+            res.render("adminPages/adminFoodTable", {
+                loginUser: loginUser,
+                foods: data,
+                currentPage: currentPage,
+                count: totalPage
+            })
+        } else {
+            res.send(`<h1>Something Wrong !!</h1> <h2>Opps! you can not acess this page..</h2> `)
+        }
+    } else
+        res.render("login", {
+            loginFirst: true
+        })
+})
+
+//search food dish by user
+route.post("/searchFood", async (req, res) => {
+    const loginUser = req.session.loginUser;
+    const search = req.body.foodSearch
+    const data = await dish.find({ "dname": new RegExp(search, 'i') });
+    res.render("showDishes", {
+        loginUser: loginUser,
+        foods: data,
+        searchKey: search
+    })
+})
+
+//save the dish
+route.post('/saveDish', async (req, res) => {
+    try {
+        // 检查上传文件和表单输入的有效性
+        if (
+            req.files == null || 
+            req.body.ddiscount > 100 || 
+            req.body.dname.trim() === '' || 
+            req.body.dprice <= 0
+        ) {
+            return res.render("adminPages/adminAddNewDish", {
+                notsave: true
+            });
+        }
+
+        // 获取上传的图片文件
+        const { photo } = req.files;
+        const imageName = `${Date.now()}${photo.name}`; // 动态生成文件名，避免重复
+
+        // 动态构建图片存储路径，存储到 public/dishImages 文件夹下
+        const uploadPath = path.join(__dirname, '../../public/dishImages');
+        console.log(uploadPath);
+        const imagePath = path.join(uploadPath, imageName);
+
+        // 确保目录存在（如果不存在则创建）
+        if (!fs.existsSync(uploadPath)) {
+            fs.mkdirSync(uploadPath, { recursive: true });
+        }
+
+        // 移动图片到目标路径
+        await photo.mv(imagePath);
+
+        // 将图片路径保存到 req.body 中，以便存入数据库
+        req.body.photo = `${imageName}`;
+
+        // 将菜品数据存储到数据库
+        const data = await dish.create(req.body);
+        console.log(req.body);
+        if (data) {
+            console.log("Dish saved successfully");
+            return res.render("adminPages/adminAddNewDish", {
+                save: true
+            });
+        } else {
+            console.error("Failed to save dish");
+            return res.render("adminPages/adminAddNewDish", {
+                notsave: true
+            });
+        }
+    } catch (error) {
+        console.error("Error while saving dish:", error);
+        return res.render("adminPages/adminAddNewDish", {
+            notsave: true
+        });
+    }
+});
+
+//delete the dish
+route.get('/admin/deleteDish/:id', async (req, res) => {
+    if (req.session.loginUser) {
+        const loginUser = req.session.loginUser
+        const data = await dish.deleteOne({ "_id": req.params.id })
+        if (data) {
+            console.log("file is deleted...")
+
+            currentPage = 1;
+            const total = 6
+            const start = (currentPage - 1) * total
+            const foods = await dish.find().skip(start).limit(total)
+            const totalPage = Math.ceil(await dish.find().countDocuments() / total)
+            res.render("adminPages/adminFoodTable", {
+                loginUser: loginUser,
+                foods: foods,
+                currentPage: 1,
+                count: totalPage,
+                delete: true
+            })
+        } else {
+            res.send("<h1>Server Error !!</h1><h2> Soory dish is not deleted p;ease try letter..</br><a href='/admin/dishMenus/1'>Back to dish menu table</a> </h2>")
+        }
+    } else
+        res.render("login", {
+            loginFirst: true
+        })
+
+})
+//place order
+route.get("/admin/adminOrder/:page", async (req, res) => {
+    if (req.session.loginUser) {
+        const loginUser = req.session.loginUser;
+        if (loginUser.type == 'admin') {
+            let currentPage = 1;
+            const page = req.params.page;
+            if (page)
+                currentPage = page;
+            const total = 10;
+            const start = (currentPage - 1) * total;
+            const data = await order.find().skip(start).limit(total);
+            const totalPage = Math.ceil(order.find().countDocuments() / total);
+            console.log("place order" + data)
+            res.render('adminPages/adminOrders', {
+                loginuser: loginUser,
+                orders: data,
+                currentPage: currentPage,
+                count: totalPage
+            })
+
+        }
+    } else {
+        res.render("login", {
+            loginFirst: true
+        })
+    }
+})
+
+//change order states
+route.get("/admin/cooking/:id", async (req, res) => {
+    if (req.session.loginUser) {
+        if (req.session.loginUser.type == 'admin') {
+            
+            const data = await order.updateOne({ _id: req.params.id }, { $set: { states: "Cooking" } })
+            res.redirect("/admin/adminOrder/1")
+        }else
+        res.send("<h2>Wrong page try to access...</h2>")
+    } else {
+        res.render("login", {
+            loginFirst: true
+        })
+    }
+})
+route.get("/admin/deliver/:id", async (req, res) => {
+    if (req.session.loginUser) {
+        if (req.session.loginUser.type == 'admin') {
+        
+            const data = await order.updateOne({ _id: req.params.id }, { $set: { states: "Out for deliver." } })
+            
+            res.redirect("/admin/adminOrder/1")
+        }else
+        res.send("<h2>Wrong page try to access...</h2>")
+    } else {
+        res.render("login", {
+            loginFirst: true
+        })
+    }
+})
+route.get("/admin/handover/:id", async (req, res) => {
+    if (req.session.loginUser) {
+        if (req.session.loginUser.type == 'admin') {
+            console.log("function i scalled")
+            const data = await order.updateOne({ _id: req.params.id }, { $set: { states: "Order completed." } })
+    
+            res.redirect("/admin/adminOrder/1")
+        }else
+        res.send("<h2>Wrong page try to access...</h2>")
+    } else {
+        res.render("login", {
+            loginFirst: true
+        })
+    }
+})
+
+//edit dish here
+route.get("/admin/editDish/:id/:flag", async (req, res) => {
+    if (req.session.loginUser) {
+        const loginUser = req.session.loginUser
+        if (loginUser.type == 'admin') {
+            const data = await dish.findById(req.params.id)
+            const flag = req.params.flag
+            if (data) {
+                res.render("adminPages/adminEditDish", {
+                    food: data,
+                    loginUser: loginUser
+                })
+            } else {
+                res.send(`<h1>Something Wrong !!</h1> <h2>Opps! Dish not Found...</h2> `)
+
+            }
+
+        } else {
+            res.send(`<h1>Something Wrong !!</h1> <h2>Opps! you can not acess this page..</h2> `)
+        }
+    } else
+        res.render("login", {
+            loginFirst: true
+        })
+})
+
+route.post("/admin/saveEditDish/:id", async (req, res) => {
+
+    if (req.session.loginUser) {
+
+        if (req.files == null)
+            console.log("photo not selected")
+        else {
+            console.log("photo to is selected ols photo is " + req.body.tempImage)
+            try {
+                fs.unlinkSync('D:/document/projects/Restorent/public/dishImage/' + req.body.tempImage)
+                console.log('old file is deleted')
+            } catch (e) {
+                console.log(e)
+            }
+            const { photo } = req.files
+            const imageName=Math.random()+photo.name;
+            req.body.photo =imageName;
+            photo.mv("D:/document/projects/Restorent/public/dishImage/" + imageName);
+            console.log(req.body.photo)
+        }
+
+        const data = await dish.updateOne({ _id: req.params.id }, { $set: req.body })
+        if (data) {
+            console.log("dish updated")
+            res.redirect("/admin/editDish/" + req.params.id + "/success")
+        } else {
+            console.log('dish not updated')
+            res.redirect("/admin/editDish/" + req.params.id + "/error")
+
+        }
+    } else
+        res.render("login", {
+            loginFirst: true
+        })
+})
+route.get("/logout", (req, res) => {
+    req.session.destroy();
+    res.render("login", {
+        logout: true
+    })
+})
+
+//check out
+route.get("/user/orderFood", (req, res) => {
+    if (req.session.loginUser) {
+        const loginUser = req.session.loginUser
+        res.render("normalPages/normalCheckout", {
+            loginUser: loginUser
+        })
+    } else {
+        res.render("login", {
+            loginFirst: true
+        })
+    }
+})
+
+route.post("/orderNowFromBasket", (req, res) => {
+    if (req.session.loginUser) {
+        res.redirect("/")
+        const loginUser = req.session.loginUser;
+        const basket = JSON.parse(req.body.data)
+        let dt_ob = new Date();
+        let dateTime = "" + ("0" + dt_ob.getDate()).slice(-2) + "/" + ("0" + dt_ob.getMonth()).slice(-2) + "/" + dt_ob.getFullYear() + " T " + dt_ob.getHours() + ":" + dt_ob.getMinutes() + ":" + dt_ob.getSeconds();
+        const paymentType = req.body.paymentType
+
+        basket.forEach(async function (item) {
+            let object = {
+                dishId: item.id,
+                userId: loginUser._id,
+                user: loginUser,
+                photo: item.image,
+                dname: item.name,
+                time: dateTime,
+                price: item.price,
+                quantity: item.quantity,
+                paymentType: paymentType,
+                states: "NA"//not active order
+            }
+            console.log(object)
+            const data = await order.create(object);
+            console.log(data)
+            if (data) {
+                console.log('data is save');
+            }
+
+        });
+    } else {
+        res.render("login", {
+            loginFirst: true
+        })
+    }
+})
+
+//order page
+route.get("/user/orders", async (req, res) => {
+    if (req.session.loginUser) {
+        const loginUser = req.session.loginUser;
+        const data = await order.find({ $and: [{ "states": { $ne: "deliverd" } }, { "userId": req.session.loginUser._id }] });
+        console.log("find data : " + data)
+        res.render("normalPages/normalOrders", {
+            loginUser: loginUser,
+            orderFood: data
+        })
+    } else {
+        res.render("login", {
+            loginFirst: true
+        })
+    }
+})
+
+route.get("/user/cancelOrder/:id", async (req, res) => {
+    if (req.session.loginUser) {
+        const loginUser = req.session.loginUser;
+        const deleteData = await order.deleteOne({ _id: req.params.id });
+
+
+        const data = await order.find({ $and: [{ "states": { $ne: "deliverd" } }, { "userId": req.session.loginUser._id }] });
+        console.log("find data : " + data)
+        if (deleteData)
+            res.render("normalPages/normalOrders", {
+                loginUser: loginUser,
+                orderFood: data,
+                cancelOrder: true
+            })
+    } else {
+        res.render("login", {
+            loginFirst: true
+        })
+    }
+})
+
+route.get("/user/history", async (req, res) => {
+    if (req.session.loginUser) {
+
+        const loginUser = req.session.loginUser;
+        const data = await order.find({ "userId": req.session.loginUser._id });
+
+
+        res.render("normalPages/normalHistory", {
+            loginUser: loginUser,
+            history: data
+        })
+    } else {
+        res.render("login", {
+            loginFirst: true
+        })
+    }
+})
+// View Orders for Employees
+route.get("/employee/orders/:page", isEmployee, async (req, res) => {
+    const loginUser = req.session.loginUser;
+    let currentPage = parseInt(req.params.page) || 1;
+    const total = 10;
+    const start = (currentPage - 1) * total;
+
+    // Fetch orders sorted by pick-up time (ascending)
+    const orders = await order.find()
+        .sort({ pickUpTime: 1 }) // Assuming 'pickUpTime' is a field; if not, adjust accordingly
+        .skip(start)
+        .limit(total)
+        .populate('userId', 'name'); // Populate customer name
+
+    const totalPage = Math.ceil(await order.countDocuments() / total);
+
+    res.render("employeePages/employeeOrders", {
+        loginUser: loginUser,
+        orders: orders,
+        currentPage: currentPage,
+        count: totalPage
+    });
+});
+// Update Order Status
+route.get("/employee/updateStatus/:id/:status", isEmployee, async (req, res) => {
+    const { id, status } = req.params;
+    const validStatuses = ["In Progress", "Completed"];
+
+    if (!validStatuses.includes(status)) {
+        return res.status(400).send("<h2>Invalid Status</h2>");
+    }
+
+    try {
+        await order.updateOne({ _id: id }, { $set: { states: status } });
+        // Optionally, notify the user about the status update via email or in-app notification
+        res.redirect("/employee/orders/1");
+    } catch (error) {
+        console.error("Error updating order status:", error);
+        res.status(500).send("<h2>Server Error</h2>");
+    }
+});
+// View Inventory
+route.get("/employee/inventory", isEmployee, async (req, res) => {
+    const loginUser = req.session.loginUser;
+    const dishes = await dish.find();
+
+    res.render("employeePages/employeeInventory", {
+        loginUser: loginUser,
+        dishes: dishes
+    });
+});
+
+// Mark Dish as Out-of-Stock
+route.post("/employee/markOutOfStock/:id", isEmployee, async (req, res) => {
+    const dishId = req.params.id;
+    try {
+        await dish.updateOne({ _id: dishId }, { $set: { availability: false } });
+        res.redirect("/employee/inventory");
+    } catch (error) {
+        console.error("Error marking dish as out-of-stock:", error);
+        res.status(500).send("<h2>Server Error</h2>");
+    }
+});
+
+// Mark Dish as In-Stock
+route.post("/employee/markInStock/:id", isEmployee, async (req, res) => {
+    const dishId = req.params.id;
+    try {
+        await dish.updateOne({ _id: dishId }, { $set: { availability: true } });
+        res.redirect("/employee/inventory");
+    } catch (error) {
+        console.error("Error marking dish as in-stock:", error);
+        res.status(500).send("<h2>Server Error</h2>");
+    }
+});
+route.get("/foods/:page", async (req, res) => {
+    const loginUser = req.session.loginUser;
+    let currentPage = 1;
+    let page = req.params.page;
+    if (page)
+        currentPage = page;
+    const total = 6;
+    const start = (currentPage - 1) * total;
+    let query = {};
+    if (!loginUser || loginUser.type !== 'admin' && loginUser.type !== 'employee') {
+        query.availability = true; // Only show available dishes to normal users
+    }
+    const foods = await dish.find(query).skip(start).limit(total);
+    const count = Math.ceil(await dish.find(query).countDocuments() / total);
+
+    console.log(count + " :=> " + foods);
+    res.render("showDishes", {
+        loginUser: loginUser,
+        foods: foods,
+        count: count,
+        currentPage: currentPage
+    });
+});
+// Employee Order History
+route.get("/employee/history", isEmployee, async (req, res) => {
+    const loginUser = req.session.loginUser;
+    const history = await order.find().sort({ time: -1 }); // Sort by date descending
+
+    res.render("employeePages/employeeHistory", {
+        loginUser: loginUser,
+        history: history
+    });
+});
+// View Notifications
+route.get("/employee/notifications", isEmployee, async (req, res) => {
+    const loginUser = req.session.loginUser;
+    const user = await User.findById(loginUser._id);
+    res.render("employeePages/employeeNotifications", {
+        loginUser: loginUser,
+        notifications: user.notifications
+    });
+});
+
+// Mark Notification as Read
+route.post("/employee/notifications/read/:id", isEmployee, async (req, res) => {
+    const notificationId = req.params.id;
+    const userId = req.session.loginUser._id;
+
+    try {
+        await User.updateOne(
+            { _id: userId, "notifications._id": notificationId },
+            { $set: { "notifications.$.read": true } }
+        );
+        res.redirect("/employee/notifications");
+    } catch (error) {
+        console.error("Error marking notification as read:", error);
+        res.status(500).send("<h2>Server Error</h2>");
+    }
+});
+route.post("/orderNowFromBasket", async (req, res) => {
+    if (req.session.loginUser) {
+        const loginUser = req.session.loginUser;
+        const basket = JSON.parse(req.body.data);
+        let dt_ob = new Date();
+        let dateTime = "" + ("0" + dt_ob.getDate()).slice(-2) + "/" + ("0" + (dt_ob.getMonth()+1)).slice(-2) + "/" + dt_ob.getFullYear() + " T " + ("0"+dt_ob.getHours()).slice(-2) + ":" + ("0"+dt_ob.getMinutes()).slice(-2) + ":" + ("0"+dt_ob.getSeconds()).slice(-2);
+        const paymentType = req.body.paymentType;
+
+        // Create order entries
+        for (let item of basket) {
+            let object = {
+                dishId: item.id,
+                userId: loginUser._id,
+                user: loginUser,
+                photo: item.image,
+                dname: item.name,
+                time: dateTime,
+                pickUpTime: req.body.pickUpTime || "ASAP", // Capture pick-up time from the request
+                price: item.price,
+                quantity: item.quantity,
+                paymentType: paymentType,
+                states: "Pending", // Initial state
+                specialRequests: req.body.specialRequests || "" // Capture special requests
+            };
+            console.log(object);
+            const data = await order.create(object);
+            console.log(data);
+
+            if (data) {
+                console.log('Order is saved');
+                // Notify all employees
+                const employees = await User.find({ type: 'employee' });
+                for (let emp of employees) {
+                    emp.notifications.push({
+                        message: `New Order Placed: Order ID ${data._id} by ${loginUser.name}`
+                    });
+                    await emp.save();
+                }
+            }
+        }
+
+        res.redirect("/");
+    } else {
+        res.render("login", {
+            loginFirst: true
+        });
+    }
+});
+
+// Middleware to check if user is an employee
+function isEmployee(req, res, next) {
+    if (req.session.loginUser && req.session.loginUser.type === 'employee') {
+        next();
+    } else {
+        res.status(403).send("<h2>Access Denied: Employees Only</h2>");
+    }
+}
+
+module.exports = route
+src\app.js
+const express =require('express')
+const hbs=require('hbs')
+const route=require('./routers/main')
+const bodyParser=require('body-parser');
+const mongoose=require('mongoose');
+const session=require('express-session');
+const fileUpload = require('express-fileupload');
+const path = require('path');
+const { handlebars } = require('hbs');
+require("./handlebar")//this hbs user made handlebars
+const app=express();
+app.use(fileUpload())
+app.use(session({
+    secret:"restorent_datails"
+}))
+app.use(bodyParser.urlencoded({
+    extended:true
+}))
+
+app.use('',route)
+//static folder
+// 配置 public 文件夹为静态资源目录
+app.use(express.static(path.join(__dirname, 'public')));
+app.use("/static",express.static("public"));
+//template engine
+app.set("view engine",'hbs')
+app.set("views",'views')
+//app.set("views","")
+hbs.registerPartials('views/partials')
+
+
+
+
+
+mongoose.connect("mongodb://127.0.0.1:27017/", { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => {
+    console.log("Server connected to MongoDB successfully.");
+  })
+  .catch((err) => {
+    console.error("Failed to connect to MongoDB. Error:", err);
+  });
+
+// 监听 mongoose 的连接事件
+const db = mongoose.connection;
+
+// 当连接成功时
+db.on("connected", () => {
+  console.log("Mongoose connected to MongoDB.");
+});
+
+// 当连接出错时
+db.on("error", (err) => {
+  console.error("Mongoose connection error:", err);
+});
+
+// 当连接断开时
+db.on("disconnected", () => {
+  console.log("Mongoose connection disconnected.");
+});
+
+// 处理进程退出时的断开连接
+process.on("SIGINT", async () => {
+  await db.close();
+  console.log("Mongoose connection closed due to app termination.");
+  process.exit(0);
+});
+
+app.listen(5656,()=>{
+    console.log('server is start..')
+})
+src\handlebar.js
+const { handlebars } = require("hbs");
+
+handlebars.registerHelper('times', function (n, block) {
+    var accum = '';
+    for (var i = 1; i <= n; i++)
+        accum += block.fn(i)
+    return accum;
+});
+handlebars.registerHelper('nextPage', function (n, block) {
+    return Number(n) + 1;
+})
+handlebars.registerHelper('prevPage', function (n, block) {
+    return Number(n) - 1;
+})
+
+handlebars.registerHelper('ifnext', function (currentPage, endPage, block) {
+    if (Number(currentPage) >= Number(endPage))
+        return 'disabled';
+    else
+        return false;
+})
+handlebars.registerHelper('ifprev', function (currentPage, block) {
+    console.log(currentPage)
+    if (Number(currentPage) <= 1)
+        return 'disabled';
+    else
+        return false;
+})
+handlebars.registerHelper("active", function (active, currentPage, block) {
+    console.log(active + " :: " + currentPage)
+    if (active == currentPage)
+        return 'active'
+    else
+        return false;
+})
+handlebars.registerHelper('json', function (context) {
+    return JSON.stringify(context).replace(/"/g, '&quot;');
+})
+
+handlebars.registerHelper('discount', function (price, discount, block) {
+    console.log("discount is " + (price - ((price * discount) / 100)));
+
+    let discountPrice = parseFloat(price - ((price * discount) / 100)).toFixed(2);
+    console.log(price + "%" + discount + " discount price is : " + discountPrice)
+    return discountPrice;
+})
+
+handlebars.registerHelper("ifStates", function (states, id, block) {
+    console.log(states)
+    if (states == "NA") {
+        return '<td><a href="/admin/cooking/' + id + '" class="btn states-btn btn-outline-success btn-sm">Cooking</a></td>';
+    } else if (states == "Cooking") {
+        return '<td><a href="/admin/deliver/' + id + '" class="btn states-btn btn-outline-warning btn-sm ">Deliver</a></td>';
+    }else if(states == "Out for deliver."){
+        return '<td><a href="/admin/handover/' + id + '" class="btn states-btn btn-outline-danger btn-sm">Handover</a></td>';
+    }else{
+        return '<td><a class="btn btn-outline-dark states-btn btn-sm disabled">Completed</a></td>';
+    }
+})
+
+handlebars.registerHelper("ifCancelOrder",function(states,id,block){
+    if(states=="NA"){
+        return '<a href="/user/cancelOrder/'+id+'" class="main-btn">Cancel order</a>';
+    }
+})
+const hbs = require('hbs');
+
+// Register helper to increment a number
+hbs.registerHelper('increment', function(value) {
+    return parseInt(value) + 1;
+});
+
+// Register helper to decrement a number
+hbs.registerHelper('decrement', function(value) {
+    return parseInt(value) - 1;
+});
+
+// Register helper to check greater than
+hbs.registerHelper('gt', function(a, b) {
+    return a > b;
+});
+
+// Register helper to check less than
+hbs.registerHelper('lt', function(a, b) {
+    return a < b;
+});
+views\adminPages\adminAddNewDish.hbs
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add new dish</title>
+</head>
+
+<body>
+    {{>navbar loginUser=loginUser}}
+
+    <section>
+        <div class="container-fluid">
+            <div class="">
+                <div class="row">
+                    <div class="col-md-3">
+                        <!-- sidebar -->
+                        {{>sidebar}}
+                    </div>
+                    <div class="col-md-9 ">
+                        <div class="adminPanel card">
+                            <div class="text-center my-1">
+                                <h4><span class="primary-color">FOODIES</span> New Dish.</h4>
+                            </div>
+                            <div class="mb-4 mt-2 mx-2">
+                                <div class="row">
+                                    <div class="col-md-8 offset-md-2 shadow">
+
+                                        <form action="/saveDish" method="post" enctype="multipart/form-data">
+                                            <input name="dname" type="text" class="my-2 form-control"
+                                                placeholder="Enter dish name">
+                                            <input name="dtype" type="text" class="my-2 form-control"
+                                                placeholder="Enter dish type">
+
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <input name="dprice" type="text" class="my-2 form-control"
+                                                        placeholder="Enter dish price">
+                                                </div>
+                                                <div class="col-md-6">
+                                                     <input name="dserve" type="text" class="my-2 form-control"
+                                                placeholder="Enter dish serve contity..">
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                   <input name="dtime" type="text" class="my-2 form-control"
+                                                placeholder="Enter required time">
+                                                </div>
+                                                <div class="col-md-6">
+                                                     <input name="ddiscount" type="text" class="my-2 form-control"
+                                                placeholder="Enter discount ..." min="0" max="100">
+                                                </div>
+                                            </div>
+
+                                            
+                                            <label class="my-2" for="photo">Food Pic : </label>
+                                            <input type="file" name="photo" id="photo">
+                                            <textarea class="my-2 form-control" name="discription" id="" cols="30"
+                                                rows="4"></textarea>
+                                            <div class="text-right">
+                                                <button class="main-btn my-2 mx-2">Add Food</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+</body>
+
+</html>
+{{#if save}}
+<script>
+    Swal.fire({
+        title: 'New Dish Added!',
+        text: 'Dish is added to outr menu card...',
+        icon: 'success',
+        confirmButtonText: 'OK'
+    })
+</script>
+{{/if}}
+
+{{#if notsave}}
+<script>
+    Swal.fire({
+        title: 'Something is wrong!',
+        text: 'Please fill the important information. dish is not save to our menu card...',
+        icon: 'error',
+        confirmButtonText: 'Cancel'
+    })
+</script>
+{{/if}}
+views\employeePages\employeeHistory.hbs
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Order History</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    {{>navbar loginUser=loginUser}}
+
+    <section>
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-3">
+                    <!-- sidebar -->
+                    {{>sidebar}}
+                </div>
+                <div class="col-md-9">
+                    <div class="adminPanel card">
+                        <div class="text-center my-1">
+                            <h4><span class="primary-color">FOODIES</span> Order History</h4>
+                        </div>
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Order ID</th>
+                                    <th>Customer Name</th>
+                                    <th>Dish Name</th>
+                                    <th>Quantity</th>
+                                    <th>Order Time</th>
+                                    <th>Pick-Up Time</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {{#each history}}
+                                <tr>
+                                    <td>{{this._id}}</td>
+                                    <td>{{this.user.name}}</td>
+                                    <td>{{this.dname}}</td>
+                                    <td>{{this.quantity}}</td>
+                                    <td>{{this.time}}</td>
+                                    <td>{{this.pickUpTime}}</td>
+                                    <td>{{this.states}}</td>
+                                </tr>
+                                {{/each}}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+views\employeePages\employeeInventory.hbs
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Inventory Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    {{>navbar loginUser=loginUser}}
+
+    <section>
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-3">
+                    <!-- sidebar -->
+                    {{>sidebar}}
+                </div>
+                <div class="col-md-9">
+                    <div class="adminPanel card">
+                        <div class="text-center my-1">
+                            <h4><span class="primary-color">FOODIES</span> Inventory Management</h4>
+                        </div>
+                        {{#if availabilityUpdateSuccess}}
+                            <div class="alert alert-success" role="alert">
+                                Dish availability updated successfully.
+                            </div>
+                        {{/if}}
+                        {{#if availabilityUpdateError}}
+                            <div class="alert alert-danger" role="alert">
+                                Failed to update dish availability. Please try again.
+                            </div>
+                        {{/if}}
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Dish ID</th>
+                                    <th>Dish Name</th>
+                                    <th>Type</th>
+                                    <th>Price</th>
+                                    <th>Preparation Time</th>
+                                    <th>Description</th>
+                                    <th>Discount (%)</th>
+                                    <th>Servings</th>
+                                    <th>Availability</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {{#each dishes}}
+                                <tr>
+                                    <td>{{this._id}}</td>
+                                    <td>{{this.dname}}</td>
+                                    <td>{{this.dtype}}</td>
+                                    <td>${{this.dprice}}</td>
+                                    <td>{{this.dtime}} mins</td>
+                                    <td>{{this.discription}}</td>
+                                    <td>{{this.ddiscount}}%</td>
+                                    <td>{{this.dserve}}</td>
+                                    <td>
+                                        {{#if this.availability}}
+                                            <span class="status-available">Available</span>
+                                        {{else}}
+                                            <span class="status-unavailable">Out of Stock</span>
+                                        {{/if}}
+                                    </td>
+                                    <td>
+                                        {{#if this.availability}}
+                                            <form action="/employee/markOutOfStock/{{this._id}}" method="POST" style="display:inline;">
+                                                <button type="submit" class="btn btn-warning btn-sm">Mark Out of Stock</button>
+                                            </form>
+                                        {{else}}
+                                            <form action="/employee/markInStock/{{this._id}}" method="POST" style="display:inline;">
+                                                <button type="submit" class="btn btn-success btn-sm">Mark In Stock</button>
+                                            </form>
+                                        {{/if}}
+                                        <a href="/admin/editDish/{{this._id}}/inventory" class="btn btn-primary btn-sm">Edit</a>
+                                    </td>
+                                </tr>
+                                {{/each}}
+                            </tbody>
+                        </table>
+                        <!-- Pagination Controls -->
+                        <nav aria-label="Page navigation" class="mt-3 mb-5">
+                            <ul class="pagination justify-content-end">
+                                {{#if (gt currentPage 1)}}
+                                    <li class="page-item">
+                                        <a class="page-link" href="/employee/inventory/{{decrement currentPage}}" aria-label="Previous">
+                                            <span aria-hidden="true">&laquo; Previous</span>
+                                        </a>
+                                    </li>
+                                {{else}}
+                                    <li class="page-item disabled">
+                                        <span class="page-link" aria-label="Previous">&laquo; Previous</span>
+                                    </li>
+                                {{/if}}
+                                {{#each pagination totalPages=currentPage count}}
+                                    <li class="page-item {{#if (eq this ../currentPage)}}active{{/if}}">
+                                        <a class="page-link" href="/employee/inventory/{{this}}">{{this}}</a>
+                                    </li>
+                                {{/each}}
+                                {{#if (lt currentPage count)}}
+                                    <li class="page-item">
+                                        <a class="page-link" href="/employee/inventory/{{increment currentPage}}" aria-label="Next">
+                                            <span aria-hidden="true">Next &raquo;</span>
+                                        </a>
+                                    </li>
+                                {{else}}
+                                    <li class="page-item disabled">
+                                        <span class="page-link" aria-label="Next">Next &raquo;</span>
+                                    </li>
+                                {{/if}}
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+views\employeePages\employeeNotifications.hbs
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Notifications</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    {{>navbar loginUser=loginUser}}
+
+    <section>
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-3">
+                    <!-- sidebar -->
+                    {{>sidebar}}
+                </div>
+                <div class="col-md-9">
+                    <div class="adminPanel card">
+                        <div class="text-center my-1">
+                            <h4><span class="primary-color">FOODIES</span> Notifications</h4>
+                        </div>
+                        <ul class="list-group">
+                            {{#each notifications}}
+                            <li class="list-group-item">
+                                <p>{{this.message}}</p>
+                                <small>{{this.date}}</small>
+                                {{#unless this.read}}
+                                    <form action="/employee/notifications/read/{{this._id}}" method="POST">
+                                        <button type="submit" class="btn btn-sm btn-primary">Mark as Read</button>
+                                    </form>
+                                {{/unless}}
+                            </li>
+                            {{/each}}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+views\employeePages\employeeOrders.hbs
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Orders</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    {{>navbar loginUser=loginUser}}
+
+    <section>
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-3">
+                    <!-- sidebar -->
+                    {{>sidebar}}
+                </div>
+                <div class="col-md-9">
+                    <div class="adminPanel card">
+                        <div class="text-center my-1">
+                            <h4><span class="primary-color">FOODIES</span> Orders</h4>
+                        </div>
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Order ID</th>
+                                    <th>Customer Name</th>
+                                    <th>Dish Name</th>
+                                    <th>Quantity</th>
+                                    <th>Pick-Up Time</th>
+                                    <th>Special Requests</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {{#each orders}}
+                                <tr>
+                                    <td>{{this._id}}</td>
+                                    <td>{{this.user.name}}</td>
+                                    <td>{{this.dname}}</td>
+                                    <td>{{this.quantity}}</td>
+                                    <td>{{this.pickUpTime}}</td>
+                                    <td>{{this.specialRequests}}</td>
+                                    <td>{{this.states}}</td>
+                                    <td>
+                                        <a href="/employee/updateStatus/{{this._id}}/In%20Progress" class="btn btn-sm btn-warning">Mark In Progress</a>
+                                        <a href="/employee/updateStatus/{{this._id}}/Completed" class="btn btn-sm btn-success">Mark Completed</a>
+                                    </td>
+                                </tr>
+                                {{/each}}
+                            </tbody>
+                        </table>
+                        <!-- Pagination Controls -->
+                        <nav aria-label="Page navigation" class="mt-3 mb-5">
+                            <ul class="pagination justify-content-end">
+                                {{#if (gt currentPage 1)}}
+                                    <li class="page-item">
+                                        <a class="page-link" href="/employee/orders/{{decrement currentPage}}" aria-label="Previous">
+                                            <span aria-hidden="true">&laquo; Previous</span>
+                                        </a>
+                                    </li>
+                                {{else}}
+                                    <li class="page-item disabled">
+                                        <span class="page-link" aria-label="Previous">&laquo; Previous</span>
+                                    </li>
+                                {{/if}}
+                                {{#each pagination totalPages=currentPage count}}
+                                    <li class="page-item {{#if (eq this ../currentPage)}}active{{/if}}">
+                                        <a class="page-link" href="/employee/orders/{{this}}">{{this}}</a>
+                                    </li>
+                                {{/each}}
+                                {{#if (lt currentPage count)}}
+                                    <li class="page-item">
+                                        <a class="page-link" href="/employee/orders/{{increment currentPage}}" aria-label="Next">
+                                            <span aria-hidden="true">Next &raquo;</span>
+                                        </a>
+                                    </li>
+                                {{else}}
+                                    <li class="page-item disabled">
+                                        <span class="page-link" aria-label="Next">Next &raquo;</span>
+                                    </li>
+                                {{/if}}
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+views\registration.hbs
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register</title>
+    <!-- Include your CSS files here -->
+</head>
+
+<body>
+    {{>navbar}}
+    <section class="container-fluid">
+        <div class="register-banner">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="register-form">
+                            <div class="text-center">
+                                <h2 class="primary-color">Register Here...</h2>
+                            </div>
+                            <form class="form" action="/saveRegistration" method="post">
+                                <div class="mx-2">
+                                    <input name="name" class="form-control mt-3" placeholder="Enter your name" type="text" required>
+                                    <input name="email" type="email" placeholder="Enter your email" class="form-control mt-3" required>
+                                    <input name="phone" placeholder="Enter your phone number" type="text" class="form-control mt-3" required>
+                                    <input name="password" type="password" placeholder="Enter your password" class="form-control mt-3" required>
+                                    <textarea name="address" class="form-control mt-3" placeholder="Enter your address" rows="3" required></textarea>
+
+                                    <!-- Updated Account Type Selection -->
+                                    <label for="type" class="mt-3">Select Account Type:</label>
+                                    <select name="type" id="type" class="form-control mt-1" required>
+                                        <option value="normal">Normal User</option>
+                                        <option value="admin">Admin</option>
+                                        <option value="employee">Employee</option>
+                                    </select>
+                                </div>
+
+                                <div class="text-right">
+                                    <button type="submit" class="main-btn mt-2 mx-4 mb-1">Register</button>
+                                </div>
+                            </form>
+                            {{#if notsave}}
+                                <div class="alert alert-danger mt-3">
+                                    <strong>Error!</strong> Registration failed. Please try again.
+                                </div>
+                            {{/if}}
+                            {{#if save}}
+                                <div class="alert alert-success mt-3">
+                                    <strong>Success!</strong> Registration completed successfully.
+                                </div>
+                            {{/if}}
+                            {{#if newRegister}}
+                                <div class="alert alert-info mt-3">
+                                    <strong>Info:</strong> Registration successful. Please log in.
+                                </div>
+                            {{/if}}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</body>
+
+</html>

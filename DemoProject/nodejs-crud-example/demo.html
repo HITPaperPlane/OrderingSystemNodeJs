@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>简单的HTML网页</title>
+    <style>
+        /* 页面整体样式 */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+        }
+        /* 页眉样式 */
+        header {
+            background-color: #333;
+            color: white;
+            padding: 15px;
+            text-align: center;
+        }
+        /* 主要内容区域样式 */
+        main {
+            background-color: white;
+            padding: 20px;
+            margin-top: 20px;
+            border-radius: 5px;
+        }
+        /* 页脚样式 */
+        footer {
+            background-color: #333;
+            color: white;
+            padding: 10px;
+            text-align: center;
+            margin-top: 20px;
+            position: fixed;
+            width: 100%;
+            bottom: 0;
+        }
+        /* 按钮样式 */
+        button {
+            padding: 10px 20px;
+            background-color: #007BFF;
+            border: none;
+            color: white;
+            cursor: pointer;
+            border-radius: 3px;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 页眉部分 -->
+    <header>
+        <h1>欢迎来到我的网页</h1>
+    </header>
+
+    <!-- 主要内容区域 -->
+    <main>
+        <h2>关于我</h2>
+        <p>这是一个简单的HTML网页示例，用于展示基本的网页结构和样式。</p>
+        <button onclick="showMessage()">点击我</button>
+    </main>
+
+    <!-- 页脚部分 -->
+    <footer>
+        <p>&copy; 2025 我的网页</p>
+    </footer>
+
+    <!-- JavaScript部分 -->
+    <script>
+        function showMessage() {
+            alert('按钮被点击了！');
+        }
+    </script>
+
+</body>
+</html>

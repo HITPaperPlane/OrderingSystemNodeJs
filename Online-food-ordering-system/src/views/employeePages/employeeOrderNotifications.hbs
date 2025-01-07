@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Notifications</title>
+</head>
+
+<body>
+    {{>navbar loginUser=loginUser}}
+
+    <section>
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-3">
+                    <!-- Sidebar -->
+                    {{>sidebar}}
+                </div>
+                <div class="col-md-9">
+                    <div class="employeePanel card">
+                        <div class="text-center my-3">
+                            <h3><span class="primary-color">FOODIES</span> Order Notifications</h3>
+                        </div>
+                        <div class="notification-section">
+                            {{#each orders}}
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <h5 class="card-title">{{this.dname}} - {{this.user.name}}</h5>
+                                    <p class="card-text">
+                                        <strong>Price:</strong> {{this.price}}<br>
+                                        <strong>Quantity:</strong> {{this.quantity}}<br>
+                                        <strong>Pickup Time:</strong> {{this.pickupTime}}<br>
+                                        <strong>Special Requests:</strong> {{this.specialRequests}}<br>
+                                        <strong>Status:</strong> {{this.states}}
+                                    </p>
+                                    <button class="btn btn-sm btn-success" onclick="markInProgress('{{this._id}}')">Mark In Progress</button>
+                                    <button class="btn btn-sm btn-danger" onclick="markCompleted('{{this._id}}')">Mark Completed</button>
+                                </div>
+                            </div>
+                            {{/each}}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        function markInProgress(orderId) {
+            Swal.fire({
+                title: 'Mark as In Progress?',
+                text: "Are you sure you want to mark this order as 'In Progress'?",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, mark it!',
+                cancelButtonText: 'No, cancel!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Implement the logic to mark order as in progress
+                    $.ajax({
+                        type: 'POST',
+                        url: '/employee/updateOrderStatus',
+                        data: { orderId: orderId, status: 'in progress' },
+                        success: function (response) {
+                            Swal.fire('Updated!', response.message, 'success').then(() => {
+                                location.reload();
+                            });
+                        },
+                        error: function (xhr) {
+                            Swal.fire('Error!', xhr.responseJSON.message, 'error');
+                        }
+                    });
+                }
+            });
+        }
+
+        function markCompleted(orderId) {
+            Swal.fire({
+                title: 'Mark as Completed?',
+                text: "Are you sure you want to mark this order as 'Completed'?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, complete it!',
+                cancelButtonText: 'No, cancel!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Implement the logic to mark order as completed
+                    $.ajax({
+                        type: 'POST',
+                        url: '/employee/updateOrderStatus',
+                        data: { orderId: orderId, status: 'completed' },
+                        success: function (response) {
+                            Swal.fire('Completed!', response.message, 'success').then(() => {
+                                location.reload();
+                            });
+                        },
+                        error: function (xhr) {
+                            Swal.fire('Error!', xhr.responseJSON.message, 'error');
+                        }
+                    });
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>

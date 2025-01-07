@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order History</title>
+</head>
+
+<body>
+    {{>navbar loginUser=loginUser}}
+
+    <section>
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-3">
+                    <!-- Sidebar -->
+                    {{>sidebar}}
+                </div>
+                <div class="col-md-9">
+                    <div class="employeePanel card">
+                        <div class="text-center my-3">
+                            <h3><span class="primary-color">FOODIES</span> Order History</h3>
+                        </div>
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Dish Name</th>
+                                    <th>Customer Name</th>
+                                    <th>Price</th>
+                                    <th>Quantity</th>
+                                    <th>Pickup Time</th>
+                                    <th>Special Requests</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {{#each history}}
+                                <tr>
+                                    <td>{{this.dname}}</td>
+                                    <td>{{this.user.name}}</td>
+                                    <td>{{this.price}}</td>
+                                    <td>{{this.quantity}}</td>
+                                    <td>{{this.pickupTime}}</td>
+                                    <td>{{this.specialRequests}}</td>
+                                    <td>{{this.states}}</td>
+                                </tr>
+                                {{/each}}
+                            </tbody>
+                        </table>
+
+                        <nav aria-label="Page navigation example" class="mt-3 mb-5">
+                            <ul class="pagination justify-content-end">
+                                <li class="page-item">
+                                    <a class="page-link {{#ifprev currentPage}}"disabled"{{/ifprev}}" href="/employee/history/{{#prevPage currentPage}}{{/prevPage}}" aria-label="Previous">
+                                        <span aria-hidden="true">&laquo;</span>
+                                        <span class="sr-only">Previous</span>
+                                    </a>
+                                </li>
+                                {{#times count}}
+                                <li class="page-item {{#active this currentPage}}{{/active}}"><a class="page-link" href="/employee/history/{{this}}">{{this}}</a></li>
+                                {{/times}}
+                                <li class="page-item">
+                                    <a class="page-link {{#ifnext currentPage count}}"disabled"{{/ifnext}}" href="/employee/history/{{#nextPage currentPage}}{{/nextPage}}" aria-label="Next">
+                                        <span aria-hidden="true">&raquo;</span>
+                                        <span class="sr-only">Next</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</body>
+
+</html>

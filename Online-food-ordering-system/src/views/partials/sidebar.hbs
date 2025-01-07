@@ -1,0 +1,43 @@
+<div class="sidebar">
+    <div class="text-center my-4">
+        <h4>
+            {{#if (eq loginUser.type 'admin')}}
+                <a class="text-light letter-spacing" href="/dashboard">Admin Dashboard</a>
+            {{else if (eq loginUser.type 'employee')}}
+                <a class="text-light letter-spacing" href="/employee/dashboard">Employee Dashboard</a>
+            {{/if}}
+        </h4>
+    </div>
+    {{#if (eq loginUser.type 'admin')}}
+        <div class="text-center my-4">
+            <h4><a class="text-light letter-spacing" href="/admin/addDish">Add New Dish</a></h4>
+        </div>
+        <div class="text-center my-4">
+            <h4><a class="text-light letter-spacing" href="/admin/dishMenus/1">Show Food Table</a></h4>
+        </div>
+        <div class="text-center my-4">
+            <h4><a class="text-light letter-spacing" href="/admin/adminOrder/1">User Orders</a></h4>
+        </div>
+    {{/if}}
+
+    {{#if (eq loginUser.type 'employee')}}
+        <div class="text-center my-4">
+            <h4><a class="text-light letter-spacing" href="/employee/orders/1">Manage Orders</a></h4>
+        </div>
+        <div class="text-center my-4">
+            <h4><a class="text-light letter-spacing" href="/employee/history/1">Order History</a></h4>
+        </div>
+        <div class="text-center my-4">
+            <h4><a class="text-light letter-spacing" href="/employee/markOutOfStock">Mark Out-of-Stock</a></h4>
+        </div>
+    {{/if}}
+
+    <div class="text-center my-4">
+        <h4><a class="text-light letter-spacing" href="/logout">Logout</a></h4>
+    </div>
+</div>
+
+<!-- Register Handlebars Helper for Equality Check -->
+<script>
+    // Assuming you have registered a helper named 'eq' in handlebar.js
+</script>
