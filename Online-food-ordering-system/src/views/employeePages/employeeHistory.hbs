@@ -2,7 +2,6 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>历史订单 - 员工</title>
 </head>
@@ -28,6 +27,8 @@
                                     <th>取餐时间</th>
                                     <th>特殊需求</th>
                                     <th>订单状态</th>
+                                    <th>评分</th>
+                                    <th>评论</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -40,6 +41,8 @@
                                     <td>{{this.pickupTime}}</td>
                                     <td>{{this.specialRequests}}</td>
                                     <td>{{this.states}}</td>
+                                    <td>{{#if this.feedback}}{{this.feedback.rating}}{{/if}}</td>
+                                    <td>{{#if this.feedback}}{{this.feedback.comment}}{{/if}}</td>
                                 </tr>
                                 {{/each}}
                             </tbody>

@@ -31,6 +31,8 @@
                                     <th>取餐时间</th>
                                     <th>特殊需求</th>
                                     <th>状态更新</th>
+                                    <th>评分</th>
+                                    <th>评论</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -43,10 +45,24 @@
                                     <td>{{this.user.address}}</td>
                                     <td>{{this.pickupTime}}</td>
                                     <td>{{this.specialRequests}}</td>
+                                    {{!-- 原有的状态更新按钮等 --}}
                                     {{#ifStates this.states this._id}}{{/ifStates}}
+
+                                    {{!-- 新增显示评分和评论 --}}
+                                    <td>
+                                    {{#if this.feedback}}
+                                        {{this.feedback.rating}}
+                                    {{/if}}
+                                    </td>
+                                    <td>
+                                    {{#if this.feedback}}
+                                        {{this.feedback.comment}}
+                                    {{/if}}
+                                    </td>
                                 </tr>
                                 {{/each}}
                             </tbody>
+
                         </table>
 
                         <!-- 分页 -->

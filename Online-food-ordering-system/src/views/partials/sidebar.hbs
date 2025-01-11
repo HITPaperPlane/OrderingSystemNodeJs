@@ -5,8 +5,8 @@
             <h5>管理员后台</h5>
         {{else if (eq loginUser.type 'employee')}}
             <h5>员工后台</h5>
-        {{else if (eq loginUser.type 'manager')}}
-            <h5>经理后台</h5>
+        {{else}}
+            <h5>普通用户</h5>
         {{/if}}
     </div>
 
@@ -24,13 +24,7 @@
         <div class="mb-3"><a class="text-light" href="/employee/markOutOfStock">库存管理</a></div>
     {{/if}}
 
-    {{#if (eq loginUser.type 'manager')}}
-        <div class="mb-3"><a class="text-light" href="/manager/dashboard">仪表盘</a></div>
-        <div class="mb-3"><a class="text-light" href="/manager/users">用户管理</a></div>
-        <div class="mb-3"><a class="text-light" href="/manager/allOrders">订单管理</a></div>
-        <div class="mb-3"><a class="text-light" href="/manager/history">历史订单</a></div>
-        <!-- 也可添加“促销管理”、“报表”链接等 -->
-    {{/if}}
+    <!-- 如原先存在 manager 角色的条件判断，此处已删除或注释 -->
 
     <!-- 通用退出按钮 -->
     <div class="mt-5">
