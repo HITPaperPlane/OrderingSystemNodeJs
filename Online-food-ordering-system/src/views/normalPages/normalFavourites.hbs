@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>我的收藏 - 美食订餐</title>
+</head>
+<body>
+  {{> navbar loginUser=loginUser}}
+
+  <section>
+    <div class="container-fluid pb-5">
+      {{> userBar}}
+
+      <div class="container">
+        <h4 class="mt-3">我的收藏</h4>
+        <hr>
+
+        <div class="row">
+          {{#each favDishes}}
+          <div class="col-md-4 mb-4">
+            <div class="card">
+              <img style="height:210px" src="/static/dishImages/{{this.photo}}" class="card-img-top" alt="收藏菜图">
+              <div class="card-body">
+                <h5 class="card-title">{{this.dname}}</h5>
+                <p class="card-text">
+                  价格：￥{{this.dprice}} <br>
+                  烹饪时间：{{this.dtime}} 分钟 <br>
+                  描述：{{this.discription}}
+                </p>
+                <!-- 也可添加立即下单按钮 -->
+              </div>
+            </div>
+          </div>
+          {{/each}}
+
+          {{#unless favDishes.length}}
+          <div class="text-center">
+            <p>暂无收藏的菜品。</p>
+          </div>
+          {{/unless}}
+
+        </div>
+      </div>
+    </div>
+  </section>
+</body>
+</html>

@@ -1,39 +1,34 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manage Orders</title>
+    <title>管理订单 - 员工</title>
 </head>
 
 <body>
-    {{>navbar loginUser=loginUser}}
-
+    {{> navbar loginUser=loginUser}}
     <section>
         <div class="container-fluid">
             <div class="row">
                 <div class="col-md-3">
-                    <!-- Sidebar -->
-                    {{>sidebar}}
+                    {{> sidebar}}
                 </div>
                 <div class="col-md-9">
-                    <div class="employeePanel card">
-                        <div class="text-center my-3">
-                            <h3><span class="primary-color">FOODIES</span> Manage Orders</h3>
-                        </div>
+                    <div class="card m-3 p-3">
+                        <h3 class="text-center mb-3">当前订单管理</h3>
                         <table class="table table-striped">
                             <thead>
                                 <tr>
-                                    <th>Dish Name</th>
-                                    <th>Customer Name</th>
-                                    <th>Price</th>
-                                    <th>Quantity</th>
-                                    <th>Pickup Time</th>
-                                    <th>Special Requests</th>
-                                    <th>Status</th>
-                                    <th>Action</th>
+                                    <th>菜名</th>
+                                    <th>顾客姓名</th>
+                                    <th>价格(元)</th>
+                                    <th>数量</th>
+                                    <th>取餐时间</th>
+                                    <th>特殊需求</th>
+                                    <th>订单状态</th>
+                                    <th>操作</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -48,11 +43,11 @@
                                     <td>{{this.states}}</td>
                                     <td>
                                         {{#if (eq this.states "NA")}}
-                                            <button class="btn btn-sm btn-success" onclick="updateStatus('{{this._id}}', 'in progress')">Mark In Progress</button>
+                                            <button class="btn btn-sm btn-success" onclick="updateStatus('{{this._id}}', 'in progress')">标记为进行中</button>
                                         {{else if (eq this.states "in progress")}}
-                                            <button class="btn btn-sm btn-warning" onclick="updateStatus('{{this._id}}', 'completed')">Mark Completed</button>
+                                            <button class="btn btn-sm btn-warning" onclick="updateStatus('{{this._id}}', 'completed')">标记为完成</button>
                                         {{else}}
-                                            <span class="badge bg-secondary">Completed</span>
+                                            <span class="badge bg-secondary">已完成</span>
                                         {{/if}}
                                     </td>
                                 </tr>
@@ -60,21 +55,24 @@
                             </tbody>
                         </table>
 
-                        <nav aria-label="Page navigation example" class="mt-3 mb-5">
+                        <!-- 分页 -->
+                        <nav aria-label="Page navigation" class="mt-3 mb-5">
                             <ul class="pagination justify-content-end">
                                 <li class="page-item">
-                                    <a class="page-link {{#ifprev currentPage}}"disabled"{{/ifprev}}" href="/employee/orders/{{#prevPage currentPage}}{{/prevPage}}" aria-label="Previous">
+                                    <a class="page-link {{#ifprev currentPage}}{{/ifprev}}"
+                                       href="/employee/orders/{{#prevPage currentPage}}{{/prevPage}}" 
+                                       aria-label="Previous">
                                         <span aria-hidden="true">&laquo;</span>
-                                        <span class="sr-only">Previous</span>
                                     </a>
                                 </li>
                                 {{#times count}}
-                                <li class="page-item {{#active this currentPage}}{{/active}}"><a class="page-link" href="/employee/orders/{{this}}">{{this}}</a></li>
+                                <li class="page-item"><a class="page-link" href="/employee/orders/{{this}}">{{this}}</a></li>
                                 {{/times}}
                                 <li class="page-item">
-                                    <a class="page-link {{#ifnext currentPage count}}"disabled"{{/ifnext}}" href="/employee/orders/{{#nextPage currentPage}}{{/nextPage}}" aria-label="Next">
+                                    <a class="page-link {{#ifnext currentPage count}}{{/ifnext}}"
+                                       href="/employee/orders/{{#nextPage currentPage}}{{/nextPage}}" 
+                                       aria-label="Next">
                                         <span aria-hidden="true">&raquo;</span>
-                                        <span class="sr-only">Next</span>
                                     </a>
                                 </li>
                             </ul>
@@ -88,12 +86,12 @@
     <script>
         function updateStatus(orderId, status) {
             Swal.fire({
-                title: 'Update Order Status',
-                text: `Are you sure you want to mark this order as "${status}"?`,
+                title: '更新订单状态',
+                text: `确认将订单状态改为 "${status}" 吗？`,
                 icon: 'question',
                 showCancelButton: true,
-                confirmButtonText: 'Yes',
-                cancelButtonText: 'No'
+                confirmButtonText: '确认',
+                cancelButtonText: '取消'
             }).then((result) => {
                 if (result.isConfirmed) {
                     $.ajax({
@@ -105,20 +103,20 @@
                         },
                         success: function (response) {
                             Swal.fire({
-                                title: 'Success',
+                                title: '成功',
                                 text: response.message,
                                 icon: 'success',
-                                confirmButtonText: 'OK'
+                                confirmButtonText: '好的'
                             }).then(() => {
                                 location.reload();
                             });
                         },
                         error: function (xhr) {
                             Swal.fire({
-                                title: 'Error',
-                                text: xhr.responseJSON.message || 'An error occurred.',
+                                title: '错误',
+                                text: xhr.responseJSON.message || '更新失败',
                                 icon: 'error',
-                                confirmButtonText: 'OK'
+                                confirmButtonText: '好的'
                             });
                         }
                     });
@@ -127,5 +125,4 @@
         }
     </script>
 </body>
-
 </html>

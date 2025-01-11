@@ -1,0 +1,3264 @@
+文件路径: src\app.js
+文件名: app.js
+文件内容:
+const express = require('express');
+const hbs = require('hbs');
+const route = require('./routers/main');
+const bodyParser = require('body-parser');
+const mongoose = require('mongoose');
+const session = require('express-session');
+const fileUpload = require('express-fileupload');
+const path = require('path');
+require("./handlebar"); // 自定义handlebars helper
+
+const app = express();
+
+app.use(fileUpload());
+app.use(session({
+    secret: "restorent_datails",
+    resave: false,
+    saveUninitialized: true
+}));
+
+app.use(bodyParser.urlencoded({
+    extended: true
+}));
+
+// 路由
+app.use('', route);
+
+// 静态文件夹
+app.use(express.static(path.join(__dirname, 'public')));
+app.use("/static", express.static("public"));
+
+// 模板引擎
+app.set("view engine", 'hbs');
+app.set("views", path.join(__dirname, 'views'));
+hbs.registerPartials(path.join(__dirname, 'views', 'partials'));
+
+// 连接数据库
+mongoose.connect("mongodb://127.0.0.1:27017/foodOrderingSystem", { 
+    useNewUrlParser: true, 
+    useUnifiedTopology: true 
+})
+    .then(() => {
+        console.log("成功连接MongoDB数据库。");
+    })
+    .catch((err) => {
+        console.error("连接MongoDB失败，错误原因:", err);
+    });
+
+// 监听mongoose连接事件
+const db = mongoose.connection;
+db.on("connected", () => {
+    console.log("Mongoose已连接至MongoDB。");
+});
+db.on("error", (err) => {
+    console.error("Mongoose连接出错:", err);
+});
+db.on("disconnected", () => {
+    console.log("Mongoose连接已断开。");
+});
+
+// 进程终止处理
+process.on("SIGINT", async () => {
+    await db.close();
+    console.log("由于应用程序终止，Mongoose连接已关闭。");
+    process.exit(0);
+});
+
+// 启动服务
+app.listen(5656, () => {
+    console.log('服务器已启动，端口号：5656...');
+});
+
+==================================================
+文件路径: src\demo.js
+文件名: demo.js
+文件内容:
+const express = require("express");
+const app = express();
+
+app.get("/", (req, res) => {
+    res.send("<h2>你好，这里是测试Demo</h2>");
+    console.log("访问了demo服务器根路径");
+});
+
+app.listen(3232, () => {
+    console.log("Demo 服务器已启动，端口号：3232...");
+});
+
+==================================================
+文件路径: src\handlebar.js
+文件名: handlebar.js
+文件内容:
+const { handlebars } = require("hbs");
+
+// 已有的helper
+handlebars.registerHelper('times', function (n, block) {
+    let accum = '';
+    for (let i = 1; i <= n; i++){
+        accum += block.fn(i);
+    }
+    return accum;
+});
+handlebars.registerHelper('nextPage', function (n, block) {
+    return Number(n) + 1;
+});
+handlebars.registerHelper('prevPage', function (n, block) {
+    return Number(n) - 1;
+});
+handlebars.registerHelper('ifnext', function (currentPage, endPage, block) {
+    if (Number(currentPage) >= Number(endPage)) {
+        return 'disabled';
+    } else {
+        return false;
+    }
+});
+handlebars.registerHelper('ifprev', function (currentPage, block) {
+    if (Number(currentPage) <= 1) {
+        return 'disabled';
+    } else {
+        return false;
+    }
+});
+handlebars.registerHelper("active", function (active, currentPage, block) {
+    if (active == currentPage) {
+        return 'active';
+    } else {
+        return false;
+    }
+});
+handlebars.registerHelper('json', function (context) {
+    return JSON.stringify(context).replace(/"/g, '&quot;');
+});
+handlebars.registerHelper('discount', function (price, discount, block) {
+    const discountPrice = parseFloat(price - ((price * discount) / 100)).toFixed(2);
+    return discountPrice;
+});
+handlebars.registerHelper("ifStates", function (states, id, block) {
+    // 保留给admin示例使用
+    if (states === "NA") {
+        return '<td><a href="/admin/cooking/' + id + '" class="btn states-btn btn-outline-success btn-sm">烹饪中</a></td>';
+    } else if (states === "Cooking") {
+        return '<td><a href="/admin/deliver/' + id + '" class="btn states-btn btn-outline-warning btn-sm ">派送中</a></td>';
+    } else if (states === "Out for delivery.") {
+        return '<td><a href="/admin/handover/' + id + '" class="btn states-btn btn-outline-danger btn-sm">订单完成</a></td>';
+    } else {
+        return '<td><a class="btn btn-outline-dark states-btn btn-sm disabled">已完成</a></td>';
+    }
+});
+handlebars.registerHelper("ifCancelOrder", function (states, id, block) {
+    if (states === "NA") {
+        return '<a href="/user/cancelOrder/' + id + '" class="main-btn">取消订单</a>';
+    }
+});
+handlebars.registerHelper('eq', function (a, b) {
+    return a === b;
+});
+
+==================================================
+文件路径: src\modul\dish.js
+文件名: dish.js
+文件内容:
+const mongoose = require("mongoose");
+
+const dishSchema = mongoose.Schema({
+    dname: String,         // 菜品名称
+    dtype: String,         // 菜品类型
+    dprice: Number,        // 价格
+    dtime: String,         // 制作时间
+    photo: String,         // 图片
+    discription: String,   // 描述
+    ddiscount: Number,     // 折扣
+    dserve: Number         // 可供应数量(库存)
+});
+
+module.exports = mongoose.model("dish", dishSchema);
+
+==================================================
+文件路径: src\modul\favourite.js
+文件名: favourite.js
+文件内容:
+const mongoose = require('mongoose');
+
+const favouriteSchema = mongoose.Schema({
+    userId: String,
+    dishId: String,
+    createdAt: {
+        type: Date,
+        default: Date.now
+    }
+});
+
+module.exports = mongoose.model("favourites", favouriteSchema);
+
+==================================================
+文件路径: src\modul\feedback.js
+文件名: feedback.js
+文件内容:
+const mongoose = require('mongoose');
+
+const feedbackSchema = mongoose.Schema({
+    orderId: String,   // 关联订单
+    userId: String,    // 关联用户
+    rating: Number,    // 评分
+    comment: String,   // 评论
+    createdAt: {
+        type: Date,
+        default: Date.now
+    }
+});
+
+module.exports = mongoose.model("feedbacks", feedbackSchema);
+
+==================================================
+文件路径: src\modul\order.js
+文件名: order.js
+文件内容:
+const mongoose = require('mongoose');
+
+const orderSchema = mongoose.Schema({
+    dishId: String,           // 关联dish
+    userId: String,           // 关联user
+    time: String,             // 下单时间
+    pickupTime: String,       // 取餐时间
+    specialRequests: String,  // 特殊需求
+    photo: String,
+    dname: String,
+    price: Number,
+    quantity: Number,
+    paymentType: String,      // 支付方式
+    states: String,           // 订单状态
+    user: Object              // 用户信息存储
+});
+
+module.exports = mongoose.model("orders", orderSchema);
+
+==================================================
+文件路径: src\modul\user.js
+文件名: user.js
+文件内容:
+const mongoose = require('mongoose');
+
+// 在原有类型的基础上，增加“manager”角色
+const User = mongoose.Schema({
+    name: String,
+    email: String,
+    phone: String,
+    password: String,
+    address: String,
+    photo: { type: String, default: "" },  // 用于上传用户头像
+    type: {
+        type: String,
+        enum: ['normal', 'admin', 'employee', 'manager'], // 新增 'manager'
+        default: 'normal'
+    }
+});
+
+module.exports = mongoose.model("user", User);
+
+==================================================
+文件路径: src\routers\main.js
+文件名: main.js
+文件内容:
+const { Router } = require('express');
+const express = require('express');
+const session = require('express-session');
+const route = express.Router();
+const path = require('path');
+const fs = require('fs');
+
+// 数据模型
+const User = require('../modul/user');
+const Dish = require("../modul/dish");
+const Order = require('../modul/order');
+const Favourite = require('../modul/favourite');
+const Feedback = require('../modul/feedback');
+
+/**
+ * 首页 - 游客可查看
+ */
+route.get("/", (req, res) => {
+    const loginUser = req.session.loginUser;
+    res.render("index", {
+        loginUser: loginUser
+    });
+});
+
+/**
+ * 注册页面
+ */
+route.get("/register", (req, res) => {
+    const loginUser = req.session.loginUser;
+    res.render("registration", {
+        loginUser: loginUser
+    });
+});
+
+/**
+ * 登录页面
+ */
+route.get('/login', (req, res) => {
+    const loginUser = req.session.loginUser;
+    res.render("login", {
+        loginUser: loginUser
+    });
+});
+
+/**
+ * 保存注册信息
+ */
+route.post("/saveRegistration", async (req, res) => {
+    try {
+        const existingUser = await User.findOne({ email: req.body.email });
+        if (existingUser) {
+            return res.render("registration", {
+                registrationError: "该邮箱已被注册，请更换邮箱。",
+                loginUser: req.session.loginUser
+            });
+        }
+        const data = await User.create(req.body);
+        res.render("login", {
+            newRegister: true
+        });
+    } catch (error) {
+        console.error("注册错误:", error);
+        res.render("registration", {
+            registrationError: "注册时出现错误，请重试。",
+            loginUser: req.session.loginUser
+        });
+    }
+});
+
+/**
+ * 登录处理
+ */
+route.post("/loginUser", async (req, res) => {
+    try {
+        const data = await User.findOne({ email: req.body.email, password: req.body.password });
+        if (!data) {
+            // 用户名或密码错误
+            res.render("login", {
+                invalid: true,
+                email: req.body.email
+            });
+        } else {
+            req.session.loginUser = data;
+            res.redirect("/dashboard");
+        }
+    } catch (error) {
+        console.error("登录错误:", error);
+        res.render("login", {
+            loginError: "登录时出现错误，请重试。"
+        });
+    }
+});
+
+/**
+ * 不同角色的Dashboard路由
+ */
+route.get("/dashboard", (req, res) => {
+    if (req.session.loginUser) {
+        const loginUser = req.session.loginUser;
+        if (loginUser.type === 'normal') {
+            // 普通用户
+            res.render("normalPages/normalDashboard", {
+                loginUser: loginUser
+            });
+        } else if (loginUser.type === 'admin') {
+            // 管理员
+            res.render("adminPages/adminDashboard", {
+                loginUser: loginUser
+            });
+        } else if (loginUser.type === 'employee') {
+            // 员工
+            res.render("employeePages/employeeDashboard", {
+                loginUser: loginUser
+            });
+        } else if (loginUser.type === 'manager') {
+            // 经理
+            res.render("managerPages/managerDashboard", {
+                loginUser: loginUser
+            });
+        }
+    } else {
+        res.render("login", {
+            loginFirst: true
+        });
+    }
+});
+
+/**
+ * 退出登录
+ */
+route.get("/logout", (req, res) => {
+    req.session.destroy();
+    res.render("login", {
+        logout: true
+    });
+});
+
+/**
+ * 菜品列表（游客可浏览菜单）
+ */
+route.get("/foods/:page", async (req, res) => {
+    const loginUser = req.session.loginUser;
+    let currentPage = 1;
+    let page = parseInt(req.params.page);
+    if (page && !isNaN(page)) {
+        currentPage = page;
+    }
+    const total = 6; // 每页6个菜品
+    const start = (currentPage - 1) * total;
+    const foods = await Dish.find().skip(start).limit(total);
+    const count = Math.ceil(await Dish.find().countDocuments() / total);
+
+    res.render("showDishes", {
+        loginUser: loginUser,
+        foods: foods,
+        count: count,
+        currentPage: currentPage
+    });
+});
+
+/**
+ * 搜索菜品
+ */
+route.post("/searchFood", async (req, res) => {
+    try {
+        const loginUser = req.session.loginUser;
+        const search = req.body.foodSearch;
+        const data = await Dish.find({ "dname": new RegExp(search, 'i') });
+        res.render("showDishes", {
+            loginUser: loginUser,
+            foods: data,
+            searchKey: search
+        });
+    } catch (error) {
+        console.error("搜索错误:", error);
+        res.render("showDishes", {
+            loginUser: req.session.loginUser,
+            searchError: "搜索时出现错误。"
+        });
+    }
+});
+
+/**
+ * 用户下单前的“去结算”页面
+ */
+route.get("/user/orderFood", (req, res) => {
+    if (req.session.loginUser) {
+        const loginUser = req.session.loginUser;
+        res.render("normalPages/normalCheckout", {
+            loginUser: loginUser
+        });
+    } else {
+        res.render("login", {
+            loginFirst: true
+        });
+    }
+});
+
+/**
+ * 生成订单
+ */
+route.post("/orderNowFromBasket", async (req, res) => {
+    if (req.session.loginUser) {
+        const loginUser = req.session.loginUser;
+        const basket = JSON.parse(req.body.data);
+        const pickupTime = req.body.pickupTime || "尽快"; 
+        const specialRequests = req.body.specialRequests || ""; 
+        const paymentType = req.body.paymentType;
+
+        // 下单时间
+        const dt_ob = new Date();
+        const dateTime = `${("0" + dt_ob.getDate()).slice(-2)}/${("0" + (dt_ob.getMonth() + 1)).slice(-2)}/${dt_ob.getFullYear()} ` +
+                         `${("0" + dt_ob.getHours()).slice(-2)}:${("0" + dt_ob.getMinutes()).slice(-2)}:${("0" + dt_ob.getSeconds()).slice(-2)}`;
+
+        try {
+            for (const item of basket) {
+                let object = {
+                    dishId: item.id,
+                    userId: loginUser._id,
+                    user: loginUser,
+                    photo: item.image,
+                    dname: item.name,
+                    time: dateTime,
+                    pickupTime: pickupTime,
+                    specialRequests: specialRequests,
+                    price: item.price,
+                    quantity: item.quantity,
+                    paymentType: paymentType,
+                    states: "NA" // 初始状态
+                };
+                await Order.create(object);
+            }
+            res.redirect("/");
+        } catch (error) {
+            console.error("下单时出现错误:", error);
+            res.status(500).send("<h2>下单失败，请重试。</h2>");
+        }
+    } else {
+        res.render("login", {
+            loginFirst: true
+        });
+    }
+});
+
+/**
+ * 查看当前订单（普通用户）
+ */
+route.get("/user/orders", async (req, res) => {
+    if (req.session.loginUser) {
+        const loginUser = req.session.loginUser;
+        try {
+            // 只查未完成订单
+            const data = await Order.find({ $and: [{ "states": { $ne: "Order completed." } }, { "userId": loginUser._id }] }).sort({ pickupTime: 1 });
+            res.render("normalPages/normalOrders", {
+                loginUser: loginUser,
+                orderFood: data
+            });
+        } catch (error) {
+            console.error("获取订单错误:", error);
+            res.render("normalPages/normalOrders", {
+                loginUser: loginUser,
+                orderFood: [],
+                fetchError: "获取订单失败。"
+            });
+        }
+    } else {
+        res.render("login", {
+            loginFirst: true
+        });
+    }
+});
+
+/**
+ * 用户取消订单
+ * 要求：在取餐前30分钟才能取消，这里仅作简单示例
+ */
+route.get("/user/cancelOrder/:id", async (req, res) => {
+    if (req.session.loginUser) {
+        const loginUser = req.session.loginUser;
+        try {
+            // 如果需要严格判断时间，可在此先查询 pickupTime ，判断是否超过可取消时间
+            const del = await Order.deleteOne({ _id: req.params.id, userId: loginUser._id });
+            if (del.deletedCount > 0) {
+                const data = await Order.find({ $and: [{ "states": { $ne: "Order completed." } }, { "userId": loginUser._id }] }).sort({ pickupTime: 1 });
+                res.render("normalPages/normalOrders", {
+                    loginUser: loginUser,
+                    orderFood: data,
+                    cancelOrder: true
+                });
+            } else {
+                res.status(500).send("<h2>无法取消订单，可能订单已被删除或不属于你。</h2>");
+            }
+        } catch (error) {
+            console.error("取消订单错误:", error);
+            res.status(500).send("<h2>取消订单出错。</h2>");
+        }
+    } else {
+        res.render("login", {
+            loginFirst: true
+        });
+    }
+});
+
+/**
+ * 用户查看历史订单
+ */
+route.get("/user/history", async (req, res) => {
+    if (req.session.loginUser) {
+        const loginUser = req.session.loginUser;
+        try {
+            const data = await Order.find({ "userId": loginUser._id }).sort({ pickupTime: -1 });
+            res.render("normalPages/normalHistory", {
+                loginUser: loginUser,
+                history: data
+            });
+        } catch (error) {
+            console.error("获取历史订单错误:", error);
+            res.render("normalPages/normalHistory", {
+                loginUser: loginUser,
+                history: [],
+                fetchError: "获取历史订单失败。"
+            });
+        }
+    } else {
+        res.render("login", {
+            loginFirst: true
+        });
+    }
+});
+
+/**
+ * 用户收藏夹功能 - 添加到收藏
+ */
+route.post("/user/addFavourite/:dishId", async (req, res) => {
+    if (req.session.loginUser) {
+        const loginUser = req.session.loginUser;
+        try {
+            // 判断是否已经收藏
+            const found = await Favourite.findOne({ userId: loginUser._id, dishId: req.params.dishId });
+            if (!found) {
+                await Favourite.create({ userId: loginUser._id, dishId: req.params.dishId });
+            }
+            // 重定向或返回成功提示
+            res.redirect("/foods/1");
+        } catch (error) {
+            console.error("收藏出现错误:", error);
+            res.status(500).send("收藏时出错。");
+        }
+    } else {
+        res.render("login", {
+            loginFirst: true
+        });
+    }
+});
+
+/**
+ * 用户查看收藏夹
+ */
+route.get("/user/favourites", async (req, res) => {
+    if (req.session.loginUser) {
+        const loginUser = req.session.loginUser;
+        try {
+            // 查询收藏的dish
+            const favs = await Favourite.find({ userId: loginUser._id });
+            // 获取收藏的dish详细信息
+            let dishIds = favs.map(f => f.dishId);
+            let favDishes = [];
+            if (dishIds.length > 0) {
+                favDishes = await Dish.find({ _id: { $in: dishIds } });
+            }
+            res.render("normalPages/normalFavourites", {
+                loginUser,
+                favDishes
+            });
+        } catch (error) {
+            console.error("获取收藏夹错误:", error);
+            res.render("normalPages/normalFavourites", {
+                loginUser,
+                favDishes: [],
+                fetchError: "获取收藏夹失败。"
+            });
+        }
+    } else {
+        res.render("login", {
+            loginFirst: true
+        });
+    }
+});
+
+/**
+ * 用户对订单评价
+ */
+route.post("/user/feedback", async (req, res) => {
+    if (req.session.loginUser) {
+        const { orderId, rating, comment } = req.body;
+        const loginUser = req.session.loginUser;
+        try {
+            await Feedback.create({
+                orderId: orderId,
+                userId: loginUser._id,
+                rating: rating,
+                comment: comment
+            });
+            res.redirect("/user/history");
+        } catch (error) {
+            console.error("评价出现错误:", error);
+            res.status(500).send("评价失败，请重试。");
+        }
+    } else {
+        res.render("login", {
+            loginFirst: true
+        });
+    }
+});
+
+/**
+ * 用户编辑个人资料
+ */
+route.get("/user/editProfile", (req, res) => {
+    if (!req.session.loginUser) {
+        return res.render("login", { loginFirst: true });
+    }
+    res.render("normalPages/normalEditProfile", {
+        loginUser: req.session.loginUser
+    });
+});
+route.post("/user/saveProfile", async (req, res) => {
+    if (!req.session.loginUser) {
+        return res.render("login", { loginFirst: true });
+    }
+    const loginUser = req.session.loginUser;
+    try {
+        // 如果上传了新头像
+        if (req.files && req.files.photo) {
+            const oldImage = loginUser.photo;
+            const { photo } = req.files;
+            const imageName = `${Date.now()}_${photo.name}`;
+            const uploadPath = path.join(__dirname, '../../public/userImages');
+            if (!fs.existsSync(uploadPath)) {
+                fs.mkdirSync(uploadPath, { recursive: true });
+            }
+            const imagePath = path.join(uploadPath, imageName);
+            await photo.mv(imagePath);
+            req.body.photo = imageName;
+            // 如果有旧头像则删除(可选)
+            if (oldImage) {
+                const oldImagePath = path.join(uploadPath, oldImage);
+                if (fs.existsSync(oldImagePath)) {
+                    fs.unlinkSync(oldImagePath);
+                }
+            }
+        }
+        // 更新用户资料
+        await User.updateOne({ _id: loginUser._id }, { $set: req.body });
+        // 更新session
+        const updatedUser = await User.findById(loginUser._id);
+        req.session.loginUser = updatedUser;
+        res.redirect("/dashboard");
+    } catch (err) {
+        console.log("更新个人资料错误:", err);
+        res.status(500).send("更新个人资料失败，请稍后再试");
+    }
+});
+
+/**
+ * 管理员功能：添加新菜品
+ */
+route.get("/admin/addDish", (req, res) => {
+    if (req.session.loginUser) {
+        const loginUser = req.session.loginUser;
+        if (loginUser.type === "admin") {
+            res.render("adminPages/adminAddNewDish", {
+                loginUser: loginUser
+            });
+        } else {
+            res.status(403).send("无权访问此页面。");
+        }
+    } else {
+        res.render("login", {
+            loginFirst: true
+        });
+    }
+});
+
+/**
+ * 管理员 - 保存新菜品
+ */
+route.post('/saveDish', async (req, res) => {
+    if (!req.session.loginUser || req.session.loginUser.type !== 'admin') {
+        return res.status(403).send("无权限。");
+    }
+    try {
+        if (!req.files || req.body.ddiscount > 100 || req.body.dname.trim() === '' || req.body.dprice <= 0) {
+            return res.render("adminPages/adminAddNewDish", {
+                notsave: true,
+                loginUser: req.session.loginUser
+            });
+        }
+
+        const { photo } = req.files;
+        const imageName = `${Date.now()}_${photo.name}`;
+        const uploadPath = path.join(__dirname, '../../public/dishImages');
+        if (!fs.existsSync(uploadPath)) {
+            fs.mkdirSync(uploadPath, { recursive: true });
+        }
+        const imagePath = path.join(uploadPath, imageName);
+        await photo.mv(imagePath);
+
+        req.body.photo = imageName;
+        const data = await Dish.create(req.body);
+        if (data) {
+            return res.render("adminPages/adminAddNewDish", {
+                save: true,
+                loginUser: req.session.loginUser
+            });
+        } else {
+            return res.render("adminPages/adminAddNewDish", {
+                notsave: true,
+                loginUser: req.session.loginUser
+            });
+        }
+    } catch (error) {
+        console.error("保存菜品时出现错误:", error);
+        return res.render("adminPages/adminAddNewDish", {
+            notsave: true,
+            loginUser: req.session.loginUser
+        });
+    }
+});
+
+/**
+ * 管理员 - 展示菜品表
+ */
+route.get("/admin/dishMenus/:page", async function (req, res) {
+    if (req.session.loginUser && req.session.loginUser.type === "admin") {
+        const loginUser = req.session.loginUser;
+        let currentPage = 1;
+        let page = parseInt(req.params.page);
+        if (page && !isNaN(page)){
+            currentPage = page;
+        }
+        const total = 6;
+        const start = (currentPage - 1) * total;
+        const data = await Dish.find().skip(start).limit(total);
+        const totalPage = Math.ceil(await Dish.find().countDocuments() / total);
+        res.render("adminPages/adminFoodTable", {
+            loginUser,
+            foods: data,
+            currentPage,
+            count: totalPage
+        });
+    } else {
+        res.render("login", { loginFirst: true });
+    }
+});
+
+/**
+ * 管理员 - 删除菜品
+ */
+route.get('/admin/deleteDish/:id', async (req, res) => {
+    if (req.session.loginUser && req.session.loginUser.type === 'admin') {
+        try {
+            const dishToDelete = await Dish.findById(req.params.id);
+            if (dishToDelete && dishToDelete.photo) {
+                const imagePath = path.join(__dirname, '../../public/dishImages', dishToDelete.photo);
+                if (fs.existsSync(imagePath)) {
+                    fs.unlinkSync(imagePath);
+                }
+            }
+            const data = await Dish.deleteOne({ "_id": req.params.id });
+            if (data.deletedCount > 0) {
+                let currentPage = 1;
+                const total = 6;
+                const start = (currentPage - 1) * total;
+                const foods = await Dish.find().skip(start).limit(total);
+                const totalPage = Math.ceil(await Dish.find().countDocuments() / total);
+                return res.render("adminPages/adminFoodTable", {
+                    loginUser: req.session.loginUser,
+                    foods: foods,
+                    currentPage: 1,
+                    count: totalPage,
+                    delete: true
+                });
+            } else {
+                res.status(500).send("删除失败。");
+            }
+        } catch (error) {
+            console.error("删除菜品错误:", error);
+            res.status(500).send("删除时出现错误。");
+        }
+    } else {
+        res.render("login", { loginFirst: true });
+    }
+});
+
+/**
+ * 管理员 - 编辑菜品
+ */
+route.get("/admin/editDish/:id/:flag", async (req, res) => {
+    if (req.session.loginUser && req.session.loginUser.type === 'admin') {
+        try {
+            const data = await Dish.findById(req.params.id);
+            if (data) {
+                res.render("adminPages/adminEditDish", {
+                    food: data,
+                    loginUser: req.session.loginUser
+                });
+            } else {
+                res.status(404).send("菜品未找到。");
+            }
+        } catch (error) {
+            console.error("编辑菜品错误:", error);
+            res.status(500).send("服务器错误。");
+        }
+    } else {
+        res.status(403).send("无权限。");
+    }
+});
+
+route.post("/admin/saveEditDish/:id", async (req, res) => {
+    if (req.session.loginUser && req.session.loginUser.type === 'admin') {
+        try {
+            if (req.files && req.files.photo) {
+                const oldImagePath = path.join(__dirname, '../../public/dishImages', req.body.tempImage);
+                if (fs.existsSync(oldImagePath)) {
+                    fs.unlinkSync(oldImagePath);
+                }
+                const { photo } = req.files;
+                const imageName = `${Date.now()}_${photo.name}`;
+                req.body.photo = imageName;
+                await photo.mv(path.join(__dirname, '../../public/dishImages/', imageName));
+            } else {
+                delete req.body.photo; 
+            }
+
+            const updateData = { ...req.body };
+            if (!updateData.photo) {
+                delete updateData.photo;
+            }
+            const data = await Dish.updateOne({ _id: req.params.id }, { $set: updateData });
+            if (data.modifiedCount > 0) {
+                res.redirect("/admin/editDish/" + req.params.id + "/success");
+            } else {
+                res.redirect("/admin/editDish/" + req.params.id + "/error");
+            }
+        } catch (error) {
+            console.error("保存编辑菜品错误:", error);
+            res.redirect("/admin/editDish/" + req.params.id + "/error");
+        }
+    } else {
+        res.status(403).send("无权限。");
+    }
+});
+
+/**
+ * 管理员查看所有订单
+ */
+route.get("/admin/adminOrder/:page", async (req, res) => {
+    if (req.session.loginUser && req.session.loginUser.type === 'admin') {
+        let currentPage = 1;
+        const page = parseInt(req.params.page);
+        if (page && !isNaN(page)){
+            currentPage = page;
+        }
+        const total = 10;
+        const start = (currentPage - 1) * total;
+        const data = await Order.find().sort({ pickupTime: 1 }).skip(start).limit(total);
+        const totalPage = Math.ceil(await Order.find().countDocuments() / total);
+        res.render('adminPages/adminOrders', {
+            loginuser: req.session.loginUser,
+            orders: data,
+            currentPage,
+            count: totalPage
+        });
+    } else {
+        res.status(403).send("无权限查看。");
+    }
+});
+
+/**
+ * 管理员 - 更新订单状态
+ */
+route.get("/admin/cooking/:id", async (req, res) => {
+    if (req.session.loginUser && req.session.loginUser.type === 'admin') {
+        try {
+            await Order.updateOne({ _id: req.params.id }, { $set: { states: "Cooking" } });
+            res.redirect("/admin/adminOrder/1");
+        } catch (error) {
+            console.error("更新订单到烹饪中错误:", error);
+            res.status(500).send("更新订单状态失败。");
+        }
+    } else {
+        res.status(403).send("无权限。");
+    }
+});
+
+route.get("/admin/deliver/:id", async (req, res) => {
+    if (req.session.loginUser && req.session.loginUser.type === 'admin') {
+        try {
+            await Order.updateOne({ _id: req.params.id }, { $set: { states: "Out for delivery." } });
+            res.redirect("/admin/adminOrder/1");
+        } catch (error) {
+            console.error("更新订单到派送中错误:", error);
+            res.status(500).send("更新订单状态失败。");
+        }
+    } else {
+        res.status(403).send("无权限。");
+    }
+});
+
+route.get("/admin/handover/:id", async (req, res) => {
+    if (req.session.loginUser && req.session.loginUser.type === 'admin') {
+        try {
+            await Order.updateOne({ _id: req.params.id }, { $set: { states: "Order completed." } });
+            res.redirect("/admin/adminOrder/1");
+        } catch (error) {
+            console.error("更新订单为完成错误:", error);
+            res.status(500).send("更新订单状态失败。");
+        }
+    } else {
+        res.status(403).send("无权限。");
+    }
+});
+
+/**
+ * 员工 - 查看/管理订单
+ */
+route.get("/employee/dashboard", (req, res) => {
+    if (req.session.loginUser && req.session.loginUser.type === 'employee') {
+        res.render("employeePages/employeeDashboard", {
+            loginUser: req.session.loginUser
+        });
+    } else {
+        res.status(403).send("无权限。");
+    }
+});
+
+route.get("/employee/orders/:page", async (req, res) => {
+    if (req.session.loginUser && req.session.loginUser.type === 'employee') {
+        const loginUser = req.session.loginUser;
+        let currentPage = 1;
+        let page = parseInt(req.params.page);
+        if (page && !isNaN(page)) {
+            currentPage = page;
+        }
+        const total = 10;
+        const start = (currentPage - 1) * total;
+        try {
+            const data = await Order.find({ states: { $ne: "Order completed." } })
+                .sort({ pickupTime: 1 })
+                .skip(start)
+                .limit(total);
+            const totalPage = Math.ceil(await Order.find({ states: { $ne: "Order completed." } }).countDocuments() / total);
+            res.render("employeePages/employeeOrders", {
+                loginUser: loginUser,
+                orders: data,
+                currentPage: currentPage,
+                count: totalPage
+            });
+        } catch (error) {
+            console.error("员工获取订单错误:", error);
+            res.status(500).send("获取订单失败。");
+        }
+    } else {
+        res.status(403).send("无权限。");
+    }
+});
+
+route.post("/employee/updateOrderStatus", async (req, res) => {
+    if (req.session.loginUser && req.session.loginUser.type === 'employee') {
+        const { orderId, status } = req.body;
+        const validStatuses = ["in progress", "completed"];
+        if (!validStatuses.includes(status.toLowerCase())) {
+            return res.status(400).json({ message: "状态无效。" });
+        }
+        try {
+            await Order.updateOne({ _id: orderId }, { $set: { states: status } });
+            res.json({ message: "订单状态更新成功。" });
+        } catch (error) {
+            console.error("员工更新订单状态错误:", error);
+            res.status(500).json({ message: "更新订单状态失败。" });
+        }
+    } else {
+        res.status(403).json({ message: "无权限。" });
+    }
+});
+
+route.get("/employee/history/:page", async (req, res) => {
+    if (req.session.loginUser && req.session.loginUser.type === 'employee') {
+        const loginUser = req.session.loginUser;
+        let currentPage = 1;
+        let page = parseInt(req.params.page);
+        if (page && !isNaN(page)) {
+            currentPage = page;
+        }
+        const total = 10;
+        const start = (currentPage - 1) * total;
+        try {
+            // 员工只查看自己下的订单历史？这看业务需求了。可改成查看所有订单的历史
+            const data = await Order.find({ userId: loginUser._id })
+                .sort({ pickupTime: -1 })
+                .skip(start)
+                .limit(total);
+            const totalPage = Math.ceil(await Order.find({ userId: loginUser._id }).countDocuments() / total);
+            res.render("employeePages/employeeHistory", {
+                loginUser: loginUser,
+                history: data,
+                currentPage: currentPage,
+                count: totalPage
+            });
+        } catch (error) {
+            console.error("员工获取历史订单错误:", error);
+            res.status(500).send("获取历史订单失败。");
+        }
+    } else {
+        res.status(403).send("无权限。");
+    }
+});
+
+route.post("/employee/markOutOfStock", async (req, res) => {
+    if (req.session.loginUser && req.session.loginUser.type === 'employee') {
+        const { dishId } = req.body;
+        try {
+            await Dish.updateOne({ _id: dishId }, { $set: { dserve: 0 } });
+            res.json({ message: "该菜品已标记为缺货。" });
+        } catch (error) {
+            console.error("员工标记缺货错误:", error);
+            res.status(500).json({ message: "标记缺货失败。" });
+        }
+    } else {
+        res.status(403).json({ message: "无权限。" });
+    }
+});
+
+/**
+ * 经理功能示例
+ */
+route.get("/manager/dashboard", (req, res) => {
+    if (req.session.loginUser && req.session.loginUser.type === 'manager') {
+        res.render("managerPages/managerDashboard", {
+            loginUser: req.session.loginUser
+        });
+    } else {
+        res.status(403).send("无权限。");
+    }
+});
+
+/**
+ * 经理 - 查看所有用户（示例，可增删改）
+ */
+route.get("/manager/users", async (req, res) => {
+    if (req.session.loginUser && req.session.loginUser.type === 'manager') {
+        const users = await User.find().sort({ type: 1 });
+        res.render("managerPages/managerUsers", {
+            loginUser: req.session.loginUser,
+            users
+        });
+    } else {
+        res.status(403).send("无权限。");
+    }
+});
+
+/**
+ * 经理 - 更新用户资料
+ */
+route.post("/manager/updateUser/:id", async (req, res) => {
+    if (req.session.loginUser && req.session.loginUser.type === 'manager') {
+        try {
+            await User.updateOne({ _id: req.params.id }, { $set: req.body });
+            res.redirect("/manager/users");
+        } catch (err) {
+            console.error("经理更新用户资料错误:", err);
+            res.status(500).send("更新失败。");
+        }
+    } else {
+        res.status(403).send("无权限。");
+    }
+});
+
+/**
+ * 经理 - 查看所有订单和支付状态
+ */
+route.get("/manager/allOrders", async (req, res) => {
+    if (req.session.loginUser && req.session.loginUser.type === 'manager') {
+        const allOrders = await Order.find().sort({ pickupTime: 1 });
+        res.render("managerPages/managerAllOrders", {
+            loginUser: req.session.loginUser,
+            orders: allOrders
+        });
+    } else {
+        res.status(403).send("无权限。");
+    }
+});
+
+/**
+ * 经理 - 查看历史订单记录
+ */
+route.get("/manager/history", async (req, res) => {
+    if (req.session.loginUser && req.session.loginUser.type === 'manager') {
+        const allOrders = await Order.find().sort({ pickupTime: -1 });
+        res.render("managerPages/managerHistory", {
+            loginUser: req.session.loginUser,
+            orders: allOrders
+        });
+    } else {
+        res.status(403).send("无权限。");
+    }
+});
+
+module.exports = route;
+
+==================================================
+文件路径: src\views\index.hbs
+文件名: index.hbs
+文件内容:
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>美食订餐 - 首页</title>
+</head>
+
+<body>
+  {{> navbar loginUser=loginUser}}
+
+  <!-- 首屏横幅 - 游客可浏览的首页，包含欢迎标语、导航按钮等 -->
+  <section id="/">
+    <div class="container-fluid px-0 top-banner">
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-5 col-md-6">
+            <h1>欢迎来到美食订餐系统</h1>
+            <p>在这里，您可以浏览我们的精美菜品并随时随地下单。</p>
+            <div class="mt-4">
+              <!-- “立即点餐”按钮 -->
+              <button class="main-btn" onclick="window.location.href='/foods/1'">立即点餐 <i class="fas fa-shopping-basket ps-3"></i></button>
+              <!-- “立即注册”按钮 -->
+              <button class="white-btn" onclick="window.location.href='/register'">立即注册 <i class="fas fa-angle-right ps-3"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 关于我们或其他介绍性版块（示例） -->
+  <section id="about" class="my-5">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-7">
+          <img src="/static/image/img/img-1.png" class="img-fluid py-2" alt="美食图片">
+        </div>
+        <div class="col-md-5 mt-md-5 mt-1">
+          <h2>健康与美味，我们都为您准备好了</h2>
+          <p>我们的厨师团队只选用最新鲜的食材，为您呈现口味与品质兼具的佳肴。</p>
+          <button class="main-btn" onclick="window.location.href='/foods/1'">查看菜品</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 底部示例 -->
+  <section id="footer">
+    <div class="text-center p-4 bg-light">
+      <a href="/register" class="mx-2">注册</a>
+      <a href="/login" class="mx-2">登录</a>
+      <a href="/foods/1" class="mx-2">浏览菜品</a>
+      <br><br>
+      <small class="mt-5 text-muted">Copyright © 
+        <script>document.write(new Date().getFullYear())</script> 
+        美食订餐系统. 保留所有权利.
+      </small>
+    </div>
+  </section>
+</body>
+</html>
+
+==================================================
+文件路径: src\views\login.hbs
+文件名: login.hbs
+文件内容:
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - 美食订餐</title>
+</head>
+
+<body>
+    {{> navbar}}
+
+    <section class="container-fluid">
+        <div class="register-banner">
+            <div class="container">
+                <div class="row mb-5 pb-5">
+                    <div class="col-md-6 mt-5 mb-5">
+                        <div class="register-form p-4 shadow">
+                            <div class="text-center">
+                                <h2 class="primary-color">用户登录</h2>
+                            </div>
+                            <form class="form" action="/loginUser" method="post">
+                                <div class="mx-2">
+                                    <input type="text" class="form-control mt-3" name="email" placeholder="请输入邮箱" required>
+                                    <input type="password" class="form-control mt-3" name="password" placeholder="请输入密码" required>
+                                </div>
+                                <div class="text-end">
+                                    <button type="submit" class="main-btn mt-3 mx-4 mb-1">登录</button>
+                                </div>
+                            </form>
+
+                            <div class="mt-3 text-center">
+                              <small>还没有账号？ <a href="/register">前往注册</a></small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{#if invalid}}
+        <script>
+            Swal.fire({
+                title: '登录失败',
+                text: '邮箱或密码不正确，请重试。',
+                icon: 'error',
+                confirmButtonText: '好的'
+            });
+        </script>
+        {{/if}}
+
+        {{#if logout}}
+        <script>
+            Swal.fire({
+                title: '退出成功',
+                icon: 'success',
+                confirmButtonText: '好的'
+            });
+        </script>
+        {{/if}}
+
+        {{#if loginFirst}}
+        <script>
+            Swal.fire({
+                title: '请先登录',
+                text: '您尚未登录，请先登录再访问。',
+                icon: 'info',
+                confirmButtonText: '好的'
+            });
+        </script>
+        {{/if}}
+
+        {{#if newRegister}}
+        <script>
+            Swal.fire({
+                title: '注册成功！',
+                text: '请使用您的邮箱和密码登录。',
+                icon: 'success',
+                confirmButtonText: '好的'
+            });
+        </script>
+        {{/if}}
+
+    </section>
+</body>
+</html>
+
+==================================================
+文件路径: src\views\registration.hbs
+文件名: registration.hbs
+文件内容:
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>注册 - 美食订餐</title>
+</head>
+
+<body>
+    {{> navbar loginUser=loginUser}}
+
+    <section class="container-fluid">
+        <div class="register-banner">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-6 my-5">
+                        <div class="register-form p-4 shadow">
+                            <div class="text-center">
+                                <h2 class="primary-color">注册新用户</h2>
+                            </div>
+                            <form class="form" action="/saveRegistration" method="post">
+                                <div class="mx-2">
+                                    <input name="name" class="form-control mt-3" placeholder="输入您的姓名" type="text" required>
+                                    <input name="email" type="email" placeholder="输入您的邮箱" class="form-control mt-3" required>
+                                    <input name="phone" placeholder="输入您的手机号" type="text" class="form-control mt-3" required>
+                                    <input name="password" type="password" placeholder="输入您的密码" class="form-control mt-3" required>
+                                    <textarea name="address" class="form-control mt-3" placeholder="输入您的收货地址" rows="3" required></textarea>
+
+                                    <!-- 帐号类型选择，通常会员是 normal，其它角色仅供管理员或测试 -->
+                                    <select name="type" class="form-control mt-3" required>
+                                        <option value="normal">普通用户</option>
+                                        <option value="admin">管理员</option>
+                                        <option value="employee">员工</option>
+                                        <option value="manager">经理</option>
+                                    </select>
+                                </div>
+
+                                <div class="text-end">
+                                    <button type="submit" class="main-btn mt-2 mb-1">立即注册</button>
+                                </div>
+                            </form>
+                        </div>
+
+                        {{#if registrationError}}
+                        <script>
+                            Swal.fire({
+                                title: '注册错误',
+                                text: '{{registrationError}}',
+                                icon: 'error',
+                                confirmButtonText: '好的'
+                            });
+                        </script>
+                        {{/if}}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</body>
+</html>
+
+==================================================
+文件路径: src\views\showDishes.hbs
+文件名: showDishes.hbs
+文件内容:
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>浏览菜品 - 美食订餐</title>
+</head>
+
+<body>
+    {{> navbar loginUser=loginUser}}
+
+    <section class="container-fluid">
+        <div class="container">
+            <!-- 搜索框 -->
+            <form action="/searchFood" method="post">
+                <div class="row search-panel">
+                    <div class="col-md-5 offset-md-3 mt-4">
+                        <input 
+                          value="{{searchKey}}" 
+                          placeholder="搜索菜品，例如：汉堡、沙拉" 
+                          class="form-control" 
+                          type="text" 
+                          name="foodSearch">
+                    </div>
+                    <div class="col-md-1 text-center mt-4">
+                        <button type="submit" class="white-btn2">搜索</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="container">
+            <div class="row my-2">
+                {{#each foods}}
+                <div class="col-md-4 my-5">
+                    <div class="card shadow-sm">
+                        <!-- 菜品图片 -->
+                        <img style="height:210px" src="/static/dishImages/{{this.photo}}" class="img-fluid mb-2" alt="菜品图片">
+                        <!-- 菜品名称 -->
+                        <h4 class="p-2">{{this.dname}}</h4>
+                        <!-- 时间 / 份数 -->
+                        <p class="text-color px-2">烹饪时间：{{this.dtime}} 分钟 | 可供应份数：{{this.dserve}}</p>
+                        <!-- 价格 + 折扣 -->
+                        <h2 class="primary-color mb-3 px-2">
+                          ￥{{#discount this.dprice this.ddiscount}}{{/discount}}
+                          <del class="text-muted">￥{{this.dprice}}</del>
+                        </h2>
+                        <p class="px-2">{{this.discription}}</p>
+                        <div class="px-2 pb-2">
+                            <!-- 加入购物车按钮 -->
+                            <button onclick="addFoodToBasket('{{this._id}}','{{this.dname}}','{{this.dprice}}','{{this.photo}}')" class="main-btn">加入购物车</button>
+
+                            <!-- 如果已登录，显示收藏按钮示例 -->
+                            {{#if loginUser}}
+                              <form style="display:inline;" action="/user/addFavourite/{{this._id}}" method="post">
+                                <button type="submit" class="white-btn2 ms-2">收藏</button>
+                              </form>
+                            {{/if}}
+                        </div>
+                    </div>
+                </div>
+                {{/each}}
+            </div>
+
+            <!-- 分页 -->
+            <nav aria-label="Page navigation" class="mt-3 mb-5">
+                <ul class="pagination justify-content-end">
+                    <li class="page-item">
+                        <a class="page-link {{#ifprev currentPage}}{{/ifprev}}" href="/foods/{{#prevPage currentPage}}{{/prevPage}}" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    {{#times count}}
+                    <li class="page-item">
+                      <a class="page-link" href="/foods/{{this}}">{{this}}</a>
+                    </li>
+                    {{/times}}
+                    <li class="page-item">
+                        <a class="page-link {{#ifnext currentPage count}}{{/ifnext}}" href="/foods/{{#nextPage currentPage}}{{/nextPage}}" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </section>
+</body>
+</html>
+
+==================================================
+文件路径: src\views\adminPages\adminAddNewDish.hbs
+文件名: adminAddNewDish.hbs
+文件内容:
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>添加新菜品 - 管理员</title>
+</head>
+
+<body>
+    {{> navbar loginUser=loginUser}}
+
+    <section>
+        <div class="container-fluid">
+            <div class="row">
+                <!-- 侧边栏 -->
+                <div class="col-md-3">
+                    {{> sidebar}}
+                </div>
+                <div class="col-md-9">
+                    <div class="card m-3 p-3">
+                        <h4 class="text-center">添加新菜品</h4>
+                        <div class="row">
+                            <div class="col-md-8 offset-md-2">
+                                <form action="/saveDish" method="post" enctype="multipart/form-data" class="p-3 shadow">
+                                    <input name="dname" type="text" class="form-control my-2" placeholder="菜品名称" required>
+                                    <input name="dtype" type="text" class="form-control my-2" placeholder="菜品类型，如：主食、甜点等" required>
+
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <input name="dprice" type="number" step="0.01" class="form-control my-2" placeholder="价格 (元)" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <input name="dserve" type="number" class="form-control my-2" placeholder="可供应份数" required>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <input name="dtime" type="text" class="form-control my-2" placeholder="烹饪时间 (分钟)">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <input name="ddiscount" type="number" class="form-control my-2" placeholder="折扣 (0-100之间)">
+                                        </div>
+                                    </div>
+
+                                    <label class="my-2" for="photo">菜品图片：</label>
+                                    <input type="file" name="photo" id="photo" required>
+
+                                    <textarea class="form-control my-2" name="discription" rows="3" placeholder="菜品描述，如主要原料、口味等"></textarea>
+
+                                    <div class="text-end">
+                                        <button class="main-btn my-2 mx-2">提交</button>
+                                    </div>
+
+                                    {{#if save}}
+                                    <script>
+                                        Swal.fire({
+                                            title: '成功',
+                                            text: '新菜品已添加！',
+                                            icon: 'success',
+                                            confirmButtonText: '好的'
+                                        })
+                                    </script>
+                                    {{/if}}
+
+                                    {{#if notsave}}
+                                    <script>
+                                        Swal.fire({
+                                            title: '出错',
+                                            text: '请检查表单信息或图片文件，未能成功保存。',
+                                            icon: 'error',
+                                            confirmButtonText: '好的'
+                                        })
+                                    </script>
+                                    {{/if}}
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+      </section>
+</body>
+</html>
+
+==================================================
+文件路径: src\views\adminPages\adminDashboard.hbs
+文件名: adminDashboard.hbs
+文件内容:
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理员面板 - 美食订餐</title>
+</head>
+<body>
+  {{> navbar loginUser=loginUser}}
+
+    <section>
+        <div class="container-fluid">
+            <div class="row">
+                <!-- 侧边栏 -->
+                <div class="col-md-3">
+                   {{> sidebar}}
+                </div>
+                <!-- 管理员仪表盘内容 -->
+                <div class="col-md-9">
+                    <div class="card m-3 p-3">
+                        <h4 class="text-center">管理员仪表盘</h4>
+                        <hr>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="card">
+                                    <div class="card-body text-center">
+                                        <img style="width:130px;height:130px;border-radius:50%" src="/static/image/img/d2.jpg" alt="菜品示例">
+                                        <h3 class="my-2 primary-color">今日订单</h3>
+                                        <h2 class="primary-color mb-0 pb-2">4352+</h2>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="card">
+                                    <div class="card-body text-center">
+                                        <img style="width:130px;height:130px;border-radius:50%" src="/static/image/img/chef.jpg" alt="厨师">
+                                        <h3 class="my-2 primary-color">厨师数量</h3>
+                                        <h2 class="primary-color mb-0 pb-2">52+</h2>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="card">
+                                    <div class="card-body text-center">
+                                        <img style="width:130px;height:130px;border-radius:50%" src="/static/image/img/pizza.jpg" alt="披萨">
+                                        <h3 class="my-2 primary-color">在售菜品</h3>
+                                        <h2 class="primary-color mb-0 pb-2">432+</h2>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="card">
+                                    <div class="card-body text-center">
+                                        <img style="width:130px;height:130px;border-radius:50%" src="/static/image/img/d1.jpg" alt="菜品示例">
+                                        <h3 class="my-2 primary-color">快速派送</h3>
+                                        <h2 class="primary-color mb-0 pb-2">42+</h2>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-center">欢迎来到管理员后台，您可以在此管理菜品、查看订单、管理用户等。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</body>
+</html>
+
+==================================================
+文件路径: src\views\adminPages\adminEditDish.hbs
+文件名: adminEditDish.hbs
+文件内容:
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>编辑菜品 - 管理员</title>
+</head>
+
+<body>
+    {{> navbar loginUser=loginUser}}
+
+    <section>
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-3">
+                    {{> sidebar}}
+                </div>
+                <div class="col-md-9">
+                    <div class="card m-3 p-3">
+                        <h4 class="text-center">编辑菜品</h4>
+                        <form action="/admin/saveEditDish/{{food._id}}" method="post" enctype="multipart/form-data" class="p-3 shadow">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <img src="/static/dishImages/{{food.photo}}" class="img-fluid py-3" alt="菜品图">
+                                    <label class="my-2" for="photo">菜品图片：</label>
+                                    <input type="hidden" value="{{food.photo}}" name="tempImage">
+                                    <input type="file" name="photo" id="photo">
+                                </div>
+                                <div class="col-md-8">
+                                    <input value="{{food.dname}}" name="dname" type="text" class="form-control my-2" placeholder="菜品名称">
+                                    <input value="{{food.dtype}}" name="dtype" type="text" class="form-control my-2" placeholder="菜品类型">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <input value="{{food.dprice}}" name="dprice" type="number" step="0.01" class="form-control my-2" placeholder="价格">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <input value="{{food.dserve}}" name="dserve" type="number" class="form-control my-2" placeholder="可供应份数">
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <input value="{{food.dtime}}" name="dtime" type="text" class="form-control my-2" placeholder="烹饪时间(分)">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <input value="{{food.ddiscount}}" name="ddiscount" type="number" class="form-control my-2" placeholder="折扣(0-100)">
+                                        </div>
+                                    </div>
+                                    <textarea class="form-control my-2" name="discription" rows="3">{{food.discription}}</textarea>
+                                    <div class="text-end">
+                                        <button class="main-btn my-2 mx-2">保存修改</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <script>
+                        let urlSplit = window.location.href.split('/');
+                        const action = urlSplit[urlSplit.length - 1];
+                        if (action == 'success') {
+                            Swal.fire({
+                                title: '修改成功',
+                                text: '菜品信息已更新！',
+                                icon: 'success',
+                                confirmButtonText: '好的'
+                            })
+                        } else if (action == 'error') {
+                            Swal.fire({
+                                title: '出错',
+                                text: '保存失败，请检查表单信息。',
+                                icon: 'error',
+                                confirmButtonText: '好的'
+                            })
+                        }
+                    </script>
+
+                </div>
+            </div>
+        </div>
+    </section>
+</body>
+</html>
+
+==================================================
+文件路径: src\views\adminPages\adminFoodTable.hbs
+文件名: adminFoodTable.hbs
+文件内容:
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>菜品管理 - 管理员</title>
+</head>
+
+<body>
+    {{> navbar loginUser=loginUser}}
+    <section>
+        <div class="container-fluid">
+            <div class="row">
+                <!-- 侧边栏 -->
+                <div class="col-md-3">
+                    {{> sidebar}}
+                </div>
+                <!-- 菜品列表 -->
+                <div class="col-md-9">
+                    <div class="card m-3 p-3">
+                        <h4 class="text-center">菜品管理</h4>
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>图片</th>
+                                    <th>菜名</th>
+                                    <th>价格</th>
+                                    <th>折扣</th>
+                                    <th>烹饪时间(分)</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {{#each foods}}
+                                <tr>
+                                    <td>
+                                      <img style="width:65px;height:65px;border-radius:50%" src="/static/dishImages/{{this.photo}}" alt="dish">
+                                    </td>
+                                    <td>{{this.dname}}</td>
+                                    <td>{{this.dprice}}</td>
+                                    <td>{{this.ddiscount}}%</td>
+                                    <td>{{this.dtime}}</td>
+                                    <td>
+                                        <!-- 编辑 -->
+                                        <button onclick="editDish('{{this._id}}')" class="btn btn-sm btn-warning">编辑</button>
+                                        <!-- 删除 -->
+                                        <button onclick="deleteDish('{{this._id}}')" class="btn btn-sm btn-danger">删除</button>
+                                    </td>
+                                </tr>
+                                {{/each}}
+                            </tbody>
+                        </table>
+
+                        <nav aria-label="Page navigation example" class="mt-3 mb-5">
+                            <ul class="pagination justify-content-end">
+                                <li class="page-item">
+                                    <a class="page-link {{#ifprev currentPage}}{{/ifprev}}"
+                                        href="/admin/dishMenus/{{#prevPage currentPage}}{{/prevPage}}"
+                                        aria-label="Previous">
+                                        <span aria-hidden="true">&laquo;</span>
+                                    </a>
+                                </li>
+                                {{#times count}}
+                                <li class="page-item"><a class="page-link" href="/admin/dishMenus/{{this}}">{{this}}</a></li>
+                                {{/times}}
+                                <li class="page-item">
+                                    <a class="page-link {{#ifnext currentPage count}}{{/ifnext}}"
+                                        href="/admin/dishMenus/{{#nextPage currentPage}}{{/nextPage}}"
+                                        aria-label="Next">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </nav>
+
+                        {{#if delete}}
+                        <script>
+                            Swal.fire({
+                                title: '删除成功',
+                                text: '该菜品已被移除。',
+                                icon: 'success',
+                                confirmButtonText: '好的'
+                            })
+                        </script>
+                        {{/if}}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+<script>
+function editDish(id){
+    location.assign("/admin/editDish/"+id+"/false")
+}
+function deleteDish(id) {
+    Swal.fire({
+        title: '确定删除这道菜品吗？',
+        showDenyButton: true,
+        confirmButtonText: '确认',
+        denyButtonText: '取消'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            location.assign("/admin/deleteDish/" + id)
+        } else if (result.isDenied) {
+            Swal.fire('已取消删除', '', 'info')
+        }
+    })
+}
+</script>
+</body>
+</html>
+
+==================================================
+文件路径: src\views\adminPages\adminOrders.hbs
+文件名: adminOrders.hbs
+文件内容:
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>所有订单 - 管理员</title>
+</head>
+
+<body>
+    {{> navbar loginUser=loginUser}}
+
+    <section>
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-3">
+                    {{> sidebar}}
+                </div>
+                <div class="col-md-9">
+                    <div class="card m-3 p-3">
+                        <h4 class="text-center">所有用户订单</h4>
+                        <hr>
+                        <table class="table table-hover table-striped">
+                            <thead>
+                                <tr>
+                                    <th>菜名</th>
+                                    <th>下单用户</th>
+                                    <th>价格(元)</th>
+                                    <th>数量</th>
+                                    <th>收货地址</th>
+                                    <th>取餐时间</th>
+                                    <th>特殊需求</th>
+                                    <th>状态更新</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {{#each orders}}
+                                <tr>
+                                    <td>{{this.dname}}</td>
+                                    <td>{{this.user.name}}</td>
+                                    <td>{{this.price}}</td>
+                                    <td>{{this.quantity}}</td>
+                                    <td>{{this.user.address}}</td>
+                                    <td>{{this.pickupTime}}</td>
+                                    <td>{{this.specialRequests}}</td>
+                                    {{#ifStates this.states this._id}}{{/ifStates}}
+                                </tr>
+                                {{/each}}
+                            </tbody>
+                        </table>
+
+                        <!-- 分页 -->
+                        <nav aria-label="Page navigation" class="mt-3 mb-5">
+                            <ul class="pagination justify-content-end">
+                                <li class="page-item">
+                                    <a class="page-link {{#ifprev currentPage}}{{/ifprev}}"
+                                       href="/admin/adminOrder/{{#prevPage currentPage}}{{/prevPage}}" aria-label="Previous">
+                                        <span aria-hidden="true">&laquo;</span>
+                                    </a>
+                                </li>
+                                {{#times count}}
+                                <li class="page-item"><a class="page-link" href="/admin/adminOrder/{{this}}">{{this}}</a></li>
+                                {{/times}}
+                                <li class="page-item">
+                                    <a class="page-link {{#ifnext currentPage count}}{{/ifnext}}"
+                                       href="/admin/adminOrder/{{#nextPage currentPage}}{{/nextPage}}" aria-label="Next">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</body>
+</html>
+
+==================================================
+文件路径: src\views\employeePages\employeeDashboard.hbs
+文件名: employeeDashboard.hbs
+文件内容:
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>员工面板 - 美食订餐</title>
+</head>
+
+<body>
+    {{> navbar loginUser=loginUser}}
+
+    <section>
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-3">
+                    {{> sidebar}}
+                </div>
+                <div class="col-md-9">
+                    <div class="card m-3 p-3">
+                        <h3 class="text-center mb-3">员工面板</h3>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <div class="card">
+                                    <div class="card-body text-center">
+                                        <h5 class="card-title">订单管理</h5>
+                                        <p class="card-text">查看并更新当前订单。</p>
+                                        <a href="/employee/orders/1" class="btn btn-primary">查看订单</a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="card">
+                                    <div class="card-body text-center">
+                                        <h5 class="card-title">历史订单</h5>
+                                        <p class="card-text">查看以往订单记录。</p>
+                                        <a href="/employee/history/1" class="btn btn-primary">历史记录</a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="card">
+                                    <div class="card-body text-center">
+                                        <h5 class="card-title">库存管理</h5>
+                                        <p class="card-text">将菜品标记为缺货或补货。</p>
+                                        <a href="/employee/markOutOfStock" class="btn btn-primary">库存管理</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-center">欢迎使用员工后台！您可以查看订单详情并根据取餐时间进行优先处理。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</body>
+</html>
+
+==================================================
+文件路径: src\views\employeePages\employeeHistory.hbs
+文件名: employeeHistory.hbs
+文件内容:
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>历史订单 - 员工</title>
+</head>
+
+<body>
+    {{> navbar loginUser=loginUser}}
+    <section>
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-3">
+                    {{> sidebar}}
+                </div>
+                <div class="col-md-9">
+                    <div class="employeePanel card m-3 p-3">
+                        <h3 class="text-center mb-3">历史订单记录</h3>
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>菜名</th>
+                                    <th>顾客</th>
+                                    <th>价格(元)</th>
+                                    <th>数量</th>
+                                    <th>取餐时间</th>
+                                    <th>特殊需求</th>
+                                    <th>订单状态</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {{#each history}}
+                                <tr>
+                                    <td>{{this.dname}}</td>
+                                    <td>{{this.user.name}}</td>
+                                    <td>{{this.price}}</td>
+                                    <td>{{this.quantity}}</td>
+                                    <td>{{this.pickupTime}}</td>
+                                    <td>{{this.specialRequests}}</td>
+                                    <td>{{this.states}}</td>
+                                </tr>
+                                {{/each}}
+                            </tbody>
+                        </table>
+
+                        <!-- 分页 -->
+                        <nav aria-label="Page navigation" class="mt-3 mb-5">
+                            <ul class="pagination justify-content-end">
+                                <li class="page-item">
+                                    <a class="page-link {{#ifprev currentPage}}{{/ifprev}}" 
+                                       href="/employee/history/{{#prevPage currentPage}}{{/prevPage}}" 
+                                       aria-label="Previous">
+                                        <span aria-hidden="true">&laquo;</span>
+                                    </a>
+                                </li>
+                                {{#times count}}
+                                <li class="page-item"><a class="page-link" href="/employee/history/{{this}}">{{this}}</a></li>
+                                {{/times}}
+                                <li class="page-item">
+                                    <a class="page-link {{#ifnext currentPage count}}{{/ifnext}}" 
+                                       href="/employee/history/{{#nextPage currentPage}}{{/nextPage}}" 
+                                       aria-label="Next">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </nav>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</body>
+</html>
+
+==================================================
+文件路径: src\views\employeePages\employeeManageInventory.hbs
+文件名: employeeManageInventory.hbs
+文件内容:
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>库存管理 - 员工</title>
+</head>
+
+<body>
+    {{> navbar loginUser=loginUser}}
+    <section>
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-3">
+                    {{> sidebar}}
+                </div>
+                <div class="col-md-9">
+                    <div class="card m-3 p-3">
+                        <h3 class="text-center">库存管理</h3>
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>菜名</th>
+                                    <th>可供应份数</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {{#each dishes}}
+                                <tr>
+                                    <td>{{this.dname}}</td>
+                                    <td>{{this.dserve}}</td>
+                                    <td>
+                                        {{#if (eq this.dserve 0)}}
+                                            <button class="btn btn-secondary btn-sm" disabled>缺货</button>
+                                        {{else}}
+                                            <button class="btn btn-danger btn-sm" onclick="markOutOfStock('{{this._id}}')">标记为缺货</button>
+                                        {{/if}}
+                                    </td>
+                                </tr>
+                                {{/each}}
+                            </tbody>
+                        </table>
+
+                        <!-- 分页逻辑（若有） -->
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        function markOutOfStock(dishId) {
+            Swal.fire({
+                title: '确认?',
+                text: "将此菜品标记为缺货吗？",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: '确定',
+                cancelButtonText: '取消'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        type: 'POST',
+                        url: '/employee/markOutOfStock',
+                        data: { dishId: dishId },
+                        success: function (response) {
+                            Swal.fire('成功', response.message, 'success').then(() => {
+                                location.reload();
+                            });
+                        },
+                        error: function (xhr) {
+                            Swal.fire('错误', xhr.responseJSON.message, 'error');
+                        }
+                    });
+                }
+            });
+        }
+    </script>
+</body>
+</html>
+
+==================================================
+文件路径: src\views\employeePages\employeeOrderNotifications.hbs
+文件名: employeeOrderNotifications.hbs
+文件内容:
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>订单通知 - 员工</title>
+</head>
+
+<body>
+    {{> navbar loginUser=loginUser}}
+    <section>
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-3">
+                    {{> sidebar}}
+                </div>
+                <div class="col-md-9">
+                    <div class="card m-3 p-3">
+                        <h3 class="text-center">订单通知</h3>
+                        <div class="notification-section">
+                            {{#each orders}}
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <h5 class="card-title">{{this.dname}} - {{this.user.name}}</h5>
+                                    <p class="card-text">
+                                        <strong>价格：</strong> ￥{{this.price}} <br>
+                                        <strong>数量：</strong> {{this.quantity}} <br>
+                                        <strong>取餐时间：</strong> {{this.pickupTime}} <br>
+                                        <strong>特殊需求：</strong> {{this.specialRequests}} <br>
+                                        <strong>订单状态：</strong> {{this.states}}
+                                    </p>
+                                    <button class="btn btn-sm btn-success" onclick="markInProgress('{{this._id}}')">标记为进行中</button>
+                                    <button class="btn btn-sm btn-danger" onclick="markCompleted('{{this._id}}')">标记为已完成</button>
+                                </div>
+                            </div>
+                            {{/each}}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        function markInProgress(orderId) {
+            Swal.fire({
+                title: '标记为进行中？',
+                text: "确认将此订单标记为“进行中”吗？",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: '确定',
+                cancelButtonText: '取消'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        type: 'POST',
+                        url: '/employee/updateOrderStatus',
+                        data: { orderId: orderId, status: 'in progress' },
+                        success: function (response) {
+                            Swal.fire('已更新', response.message, 'success').then(() => {
+                                location.reload();
+                            });
+                        },
+                        error: function (xhr) {
+                            Swal.fire('错误', xhr.responseJSON.message, 'error');
+                        }
+                    });
+                }
+            });
+        }
+
+        function markCompleted(orderId) {
+            Swal.fire({
+                title: '标记为完成？',
+                text: "确认将此订单标记为“完成”吗？",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: '确定',
+                cancelButtonText: '取消'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        type: 'POST',
+                        url: '/employee/updateOrderStatus',
+                        data: { orderId: orderId, status: 'completed' },
+                        success: function (response) {
+                            Swal.fire('已完成', response.message, 'success').then(() => {
+                                location.reload();
+                            });
+                        },
+                        error: function (xhr) {
+                            Swal.fire('错误', xhr.responseJSON.message, 'error');
+                        }
+                    });
+                }
+            });
+        }
+    </script>
+</body>
+</html>
+
+==================================================
+文件路径: src\views\employeePages\employeeOrders.hbs
+文件名: employeeOrders.hbs
+文件内容:
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理订单 - 员工</title>
+</head>
+
+<body>
+    {{> navbar loginUser=loginUser}}
+    <section>
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-3">
+                    {{> sidebar}}
+                </div>
+                <div class="col-md-9">
+                    <div class="card m-3 p-3">
+                        <h3 class="text-center mb-3">当前订单管理</h3>
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>菜名</th>
+                                    <th>顾客姓名</th>
+                                    <th>价格(元)</th>
+                                    <th>数量</th>
+                                    <th>取餐时间</th>
+                                    <th>特殊需求</th>
+                                    <th>订单状态</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {{#each orders}}
+                                <tr>
+                                    <td>{{this.dname}}</td>
+                                    <td>{{this.user.name}}</td>
+                                    <td>{{this.price}}</td>
+                                    <td>{{this.quantity}}</td>
+                                    <td>{{this.pickupTime}}</td>
+                                    <td>{{this.specialRequests}}</td>
+                                    <td>{{this.states}}</td>
+                                    <td>
+                                        {{#if (eq this.states "NA")}}
+                                            <button class="btn btn-sm btn-success" onclick="updateStatus('{{this._id}}', 'in progress')">标记为进行中</button>
+                                        {{else if (eq this.states "in progress")}}
+                                            <button class="btn btn-sm btn-warning" onclick="updateStatus('{{this._id}}', 'completed')">标记为完成</button>
+                                        {{else}}
+                                            <span class="badge bg-secondary">已完成</span>
+                                        {{/if}}
+                                    </td>
+                                </tr>
+                                {{/each}}
+                            </tbody>
+                        </table>
+
+                        <!-- 分页 -->
+                        <nav aria-label="Page navigation" class="mt-3 mb-5">
+                            <ul class="pagination justify-content-end">
+                                <li class="page-item">
+                                    <a class="page-link {{#ifprev currentPage}}{{/ifprev}}"
+                                       href="/employee/orders/{{#prevPage currentPage}}{{/prevPage}}" 
+                                       aria-label="Previous">
+                                        <span aria-hidden="true">&laquo;</span>
+                                    </a>
+                                </li>
+                                {{#times count}}
+                                <li class="page-item"><a class="page-link" href="/employee/orders/{{this}}">{{this}}</a></li>
+                                {{/times}}
+                                <li class="page-item">
+                                    <a class="page-link {{#ifnext currentPage count}}{{/ifnext}}"
+                                       href="/employee/orders/{{#nextPage currentPage}}{{/nextPage}}" 
+                                       aria-label="Next">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        function updateStatus(orderId, status) {
+            Swal.fire({
+                title: '更新订单状态',
+                text: `确认将订单状态改为 "${status}" 吗？`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: '确认',
+                cancelButtonText: '取消'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        type: 'POST',
+                        url: '/employee/updateOrderStatus',
+                        data: {
+                            orderId: orderId,
+                            status: status
+                        },
+                        success: function (response) {
+                            Swal.fire({
+                                title: '成功',
+                                text: response.message,
+                                icon: 'success',
+                                confirmButtonText: '好的'
+                            }).then(() => {
+                                location.reload();
+                            });
+                        },
+                        error: function (xhr) {
+                            Swal.fire({
+                                title: '错误',
+                                text: xhr.responseJSON.message || '更新失败',
+                                icon: 'error',
+                                confirmButtonText: '好的'
+                            });
+                        }
+                    });
+                }
+            });
+        }
+    </script>
+</body>
+</html>
+
+==================================================
+文件路径: src\views\managerPages\managerAllOrders.hbs
+文件名: managerAllOrders.hbs
+文件内容:
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>所有订单 - 经理</title>
+</head>
+<body>
+  {{> navbar loginUser=loginUser}}
+
+  <section>
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-md-3">
+          {{> sidebar}}
+        </div>
+        <div class="col-md-9">
+          <div class="card m-3 p-3">
+            <h3 class="text-center mb-3">所有订单</h3>
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>订单ID</th>
+                  <th>菜名</th>
+                  <th>用户名</th>
+                  <th>价格(元)</th>
+                  <th>支付方式</th>
+                  <th>下单时间</th>
+                  <th>取餐时间</th>
+                  <th>状态</th>
+                </tr>
+              </thead>
+              <tbody>
+                {{#each orders}}
+                <tr>
+                  <td>{{this._id}}</td>
+                  <td>{{this.dname}}</td>
+                  <td>{{this.user.name}}</td>
+                  <td>{{this.price}}</td>
+                  <td>{{this.paymentType}}</td>
+                  <td>{{this.time}}</td>
+                  <td>{{this.pickupTime}}</td>
+                  <td>{{this.states}}</td>
+                </tr>
+                {{/each}}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</body>
+</html>
+
+==================================================
+文件路径: src\views\managerPages\managerDashboard.hbs
+文件名: managerDashboard.hbs
+文件内容:
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>经理面板 - 美食订餐</title>
+</head>
+<body>
+  {{> navbar loginUser=loginUser}}
+
+  <section>
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-md-3">
+          {{> sidebar}}
+        </div>
+        <div class="col-md-9">
+          <div class="card m-3 p-3">
+            <h3 class="text-center mb-4">经理面板</h3>
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <div class="card">
+                  <div class="card-body text-center">
+                    <h5 class="card-title">用户管理</h5>
+                    <p class="card-text">查看并编辑所有用户资料。</p>
+                    <a href="/manager/users" class="btn btn-primary">前往</a>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-4 mb-3">
+                <div class="card">
+                  <div class="card-body text-center">
+                    <h5 class="card-title">所有订单</h5>
+                    <p class="card-text">查看订单及支付状态。</p>
+                    <a href="/manager/allOrders" class="btn btn-primary">前往</a>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-4 mb-3">
+                <div class="card">
+                  <div class="card-body text-center">
+                    <h5 class="card-title">历史记录</h5>
+                    <p class="card-text">查看全部历史订单。</p>
+                    <a href="/manager/history" class="btn btn-primary">前往</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <p class="text-center mt-3">欢迎使用经理后台，您可以跟进销售数据、设置促销活动等。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</body>
+</html>
+
+==================================================
+文件路径: src\views\managerPages\managerHistory.hbs
+文件名: managerHistory.hbs
+文件内容:
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>历史订单记录 - 经理</title>
+</head>
+<body>
+  {{> navbar loginUser=loginUser}}
+
+  <section>
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-md-3">
+          {{> sidebar}}
+        </div>
+        <div class="col-md-9">
+          <div class="card m-3 p-3">
+            <h3 class="text-center mb-3">历史订单记录</h3>
+            <table class="table table-bordered">
+              <thead>
+                <tr>
+                  <th>订单ID</th>
+                  <th>菜名</th>
+                  <th>顾客姓名</th>
+                  <th>价格(元)</th>
+                  <th>数量</th>
+                  <th>支付方式</th>
+                  <th>下单时间</th>
+                  <th>取餐时间</th>
+                  <th>状态</th>
+                </tr>
+              </thead>
+              <tbody>
+                {{#each orders}}
+                <tr>
+                  <td>{{this._id}}</td>
+                  <td>{{this.dname}}</td>
+                  <td>{{this.user.name}}</td>
+                  <td>{{this.price}}</td>
+                  <td>{{this.quantity}}</td>
+                  <td>{{this.paymentType}}</td>
+                  <td>{{this.time}}</td>
+                  <td>{{this.pickupTime}}</td>
+                  <td>{{this.states}}</td>
+                </tr>
+                {{/each}}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</body>
+</html>
+
+==================================================
+文件路径: src\views\managerPages\managerUsers.hbs
+文件名: managerUsers.hbs
+文件内容:
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>用户管理 - 经理</title>
+</head>
+<body>
+  {{> navbar loginUser=loginUser}}
+
+  <section>
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-md-3">
+          {{> sidebar}}
+        </div>
+        <div class="col-md-9">
+          <div class="card m-3 p-3">
+            <h3 class="text-center">用户管理</h3>
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>姓名</th>
+                  <th>邮箱</th>
+                  <th>电话</th>
+                  <th>地址</th>
+                  <th>类型</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                {{#each users}}
+                <tr>
+                  <td>{{this.name}}</td>
+                  <td>{{this.email}}</td>
+                  <td>{{this.phone}}</td>
+                  <td>{{this.address}}</td>
+                  <td>{{this.type}}</td>
+                  <td>
+                    <form action="/manager/updateUser/{{this._id}}" method="post" style="display:inline">
+                      <select name="type" class="form-select form-select-sm d-inline w-auto">
+                        <option value="normal" {{#if (eq this.type "normal")}}selected{{/if}}>normal</option>
+                        <option value="admin" {{#if (eq this.type "admin")}}selected{{/if}}>admin</option>
+                        <option value="employee" {{#if (eq this.type "employee")}}selected{{/if}}>employee</option>
+                        <option value="manager" {{#if (eq this.type "manager")}}selected{{/if}}>manager</option>
+                      </select>
+                      <button class="btn btn-sm btn-primary ms-2">更新</button>
+                    </form>
+                  </td>
+                </tr>
+                {{/each}}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</body>
+</html>
+
+==================================================
+文件路径: src\views\normalPages\normalCheckout.hbs
+文件名: normalCheckout.hbs
+文件内容:
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>确认下单 - 美食订餐</title>
+</head>
+<body>
+    {{> navbar loginUser=loginUser}}
+
+    <section>
+        <div class="container-fluid pb-5">
+            {{> userBar}}
+
+            <div class="container userSection">
+                <div class="row">
+                    <div class="col-md-3">
+                        <h4>支付方式</h4>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="paymentType" id="offline" value="cash on delivery">
+                            <label class="form-check-label" for="offline">
+                                到店付款
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="paymentType" id="online" value="online">
+                            <label class="form-check-label" for="online">
+                                在线支付
+                            </label>
+                        </div>
+
+                        <h4 class="mt-4">取餐时间</h4>
+                        <input type="datetime-local" id="pickupTime" class="form-control" name="pickupTime" required>
+
+                        <h4 class="mt-4">特殊需求</h4>
+                        <textarea id="specialRequests" class="form-control" name="specialRequests" rows="3" placeholder="如：不要辣、加辣、过敏原等"></textarea>
+                    </div>
+
+                    <div class="col-md-9">
+                        <div class="card mb-3 px-3 py-3">
+                            <h4>收货信息</h4>
+                            <p>姓名：{{loginUser.name}}</p>
+                            <p>手机号：{{loginUser.phone}}</p>
+                            <p>收货地址：{{loginUser.address}}</p>
+                        </div>
+                        <div class="card">
+                            <div class="card-body cart-body">
+                                <!-- 购物车项目会通过JS渲染 -->
+                            </div>
+                            <div class="text-end p-3">
+                                <button onclick="placeOrder()" class="main-btn">提交订单</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            function placeOrder() {
+                const cartData = localStorage.getItem('cart');
+                const paymentType = $('input[name="paymentType"]:checked').val();
+                const pickupTime = $('#pickupTime').val();
+                const specialRequests = $('#specialRequests').val();
+
+                if (!paymentType) {
+                    Swal.fire({
+                        title: '请选择支付方式',
+                        icon: 'warning',
+                        confirmButtonText: '好的'
+                    });
+                    return;
+                }
+
+                if (!pickupTime) {
+                    Swal.fire({
+                        title: '请选择取餐时间',
+                        icon: 'warning',
+                        confirmButtonText: '好的'
+                    });
+                    return;
+                }
+
+                if (cartData) {
+                    $.ajax({
+                        type: 'POST',
+                        url: '/orderNowFromBasket',
+                        data: {
+                            data: cartData,
+                            paymentType: paymentType,
+                            pickupTime: pickupTime,
+                            specialRequests: specialRequests
+                        },
+                        success: function (data) {
+                            localStorage.removeItem('cart');
+                            Swal.fire({
+                                title: '下单成功',
+                                text: '您的订单已提交，请等待餐厅处理。',
+                                icon: 'success',
+                                confirmButtonText: '好的'
+                            }).then(() => {
+                                window.location.href = "/";
+                            });
+                        },
+                        error: function (xhr) {
+                            Swal.fire({
+                                title: '下单失败',
+                                text: xhr.responseJSON?.message || '请稍后再试',
+                                icon: 'error',
+                                confirmButtonText: '好的'
+                            });
+                        }
+                    });
+                } else {
+                    Swal.fire({
+                        title: '购物车为空',
+                        text: '请先选择菜品再下单。',
+                        icon: 'info',
+                        confirmButtonText: '好的'
+                    });
+                }
+            }
+        </script>
+    </section>
+</body>
+</html>
+
+==================================================
+文件路径: src\views\normalPages\normalDashboard.hbs
+文件名: normalDashboard.hbs
+文件内容:
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户主页 - 美食订餐</title>
+</head>
+<body>
+    {{> navbar loginUser=loginUser}}
+    <section>
+        <div class="container-fluid pb-5">
+            {{> userBar}}
+
+            <div class="container userSection">
+                <div class="row">
+                    <div class="col-md-3 text-center">
+                        <!-- 也可放置用户头像 -->
+                        <img class="img-fluid" style="border-radius:50%; max-width:180px;" src="/static/image/review/review-1.jpg" alt="用户头像">
+                    </div>
+                    <div class="col-md-9">
+                        <div class="card py-3 px-3">
+                            <h4>个人资料</h4>
+                            <hr>
+                            <div class="row">
+                                <div class="col-md-4 text-muted">姓名：</div>
+                                <div class="col-md-8">{{loginUser.name}}</div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4 text-muted">邮箱：</div>
+                                <div class="col-md-8">{{loginUser.email}}</div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4 text-muted">电话：</div>
+                                <div class="col-md-8">{{loginUser.phone}}</div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4 text-muted">地址：</div>
+                                <div class="col-md-8">{{loginUser.address}}</div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4 text-muted">账号类型：</div>
+                                <div class="col-md-8">{{loginUser.type}}</div>
+                            </div>
+
+                            <div class="mt-3 text-end">
+                                <a class="btn btn-primary" href="/user/editProfile">编辑资料</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </section>
+</body>
+</html>
+
+==================================================
+文件路径: src\views\normalPages\normalEditProfile.hbs
+文件名: normalEditProfile.hbs
+文件内容:
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>编辑个人资料 - 美食订餐</title>
+</head>
+<body>
+{{> navbar loginUser=loginUser}}
+
+<section>
+  <div class="container-fluid pb-5">
+    {{> userBar}}
+
+    <div class="container my-4">
+      <div class="row">
+        <div class="col-md-6 offset-md-3">
+          <div class="card p-3">
+            <h4 class="mb-3">编辑个人资料</h4>
+            <form action="/user/saveProfile" method="POST" enctype="multipart/form-data">
+              <div class="mb-3">
+                <label for="name" class="form-label">姓名</label>
+                <input type="text" class="form-control" id="name" name="name" value="{{loginUser.name}}" required>
+              </div>
+              <div class="mb-3">
+                <label for="email" class="form-label">邮箱</label>
+                <input type="email" class="form-control" id="email" name="email" value="{{loginUser.email}}" required>
+              </div>
+              <div class="mb-3">
+                <label for="phone" class="form-label">手机号</label>
+                <input type="text" class="form-control" id="phone" name="phone" value="{{loginUser.phone}}" required>
+              </div>
+              <div class="mb-3">
+                <label for="password" class="form-label">密码</label>
+                <input type="password" class="form-control" id="password" name="password" value="{{loginUser.password}}" required>
+              </div>
+              <div class="mb-3">
+                <label for="address" class="form-label">地址</label>
+                <textarea class="form-control" id="address" name="address" rows="2" required>{{loginUser.address}}</textarea>
+              </div>
+              <div class="mb-3">
+                <label for="photo" class="form-label">头像</label>
+                <input type="file" class="form-control" id="photo" name="photo">
+                {{#if loginUser.photo}}
+                  <img src="/static/userImages/{{loginUser.photo}}" alt="用户头像" style="width:80px; height:80px; margin-top:8px; border-radius:50%;">
+                {{/if}}
+              </div>
+              <button type="submit" class="btn btn-success">保存</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+  </div>
+</section>
+
+</body>
+</html>
+
+==================================================
+文件路径: src\views\normalPages\normalFavourites.hbs
+文件名: normalFavourites.hbs
+文件内容:
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>我的收藏 - 美食订餐</title>
+</head>
+<body>
+  {{> navbar loginUser=loginUser}}
+
+  <section>
+    <div class="container-fluid pb-5">
+      {{> userBar}}
+
+      <div class="container">
+        <h4 class="mt-3">我的收藏</h4>
+        <hr>
+
+        <div class="row">
+          {{#each favDishes}}
+          <div class="col-md-4 mb-4">
+            <div class="card">
+              <img style="height:210px" src="/static/dishImages/{{this.photo}}" class="card-img-top" alt="收藏菜图">
+              <div class="card-body">
+                <h5 class="card-title">{{this.dname}}</h5>
+                <p class="card-text">
+                  价格：￥{{this.dprice}} <br>
+                  烹饪时间：{{this.dtime}} 分钟 <br>
+                  描述：{{this.discription}}
+                </p>
+                <!-- 也可添加立即下单按钮 -->
+              </div>
+            </div>
+          </div>
+          {{/each}}
+
+          {{#unless favDishes.length}}
+          <div class="text-center">
+            <p>暂无收藏的菜品。</p>
+          </div>
+          {{/unless}}
+
+        </div>
+      </div>
+    </div>
+  </section>
+</body>
+</html>
+
+==================================================
+文件路径: src\views\normalPages\normalHistory.hbs
+文件名: normalHistory.hbs
+文件内容:
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>历史订单 - 美食订餐</title>
+</head>
+<body>
+    {{> navbar loginUser=loginUser}}
+    <section>
+        <div class="container-fluid pb-5">
+            {{> userBar}}
+
+            <div class="container">
+                <div class="card p-4">
+                    <h4 class="text-center">历史订单</h4>
+                    <hr>
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>图片</th>
+                                <th>菜名</th>
+                                <th>下单时间</th>
+                                <th>价格(元)</th>
+                                <th>数量</th>
+                                <th>支付方式</th>
+                                <th>订单状态</th>
+                                <th>评价</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{#each history}}
+                            <tr>
+                                <td>
+                                    <img style="width:50px;height:50px;border-radius:50%" src="/static/dishImages/{{this.photo}}" alt="订单菜图">
+                                </td>
+                                <td>{{this.dname}}</td>
+                                <td>{{this.time}}</td>
+                                <td>{{this.price}}</td>
+                                <td>{{this.quantity}}</td>
+                                <td>{{this.paymentType}}</td>
+                                <td>{{this.states}}</td>
+                                <td>
+                                  <!-- 只有订单完成后才能评价 -->
+                                  {{#if (eq this.states "Order completed.")}}
+                                  <form action="/user/feedback" method="post" style="display:flex; gap:4px;">
+                                    <input type="hidden" name="orderId" value="{{this._id}}">
+                                    <select name="rating" class="form-select form-select-sm" required>
+                                      <option value="" disabled selected>评分</option>
+                                      <option value="1">1星</option>
+                                      <option value="2">2星</option>
+                                      <option value="3">3星</option>
+                                      <option value="4">4星</option>
+                                      <option value="5">5星</option>
+                                    </select>
+                                    <input type="text" class="form-control form-control-sm" name="comment" placeholder="评价内容">
+                                    <button class="btn btn-sm btn-success">提交</button>
+                                  </form>
+                                  {{else}}
+                                  <small>尚未完成或已评价</small>
+                                  {{/if}}
+                                </td>
+                            </tr>
+                            {{/each}}
+                        </tbody>
+                    </table>
+                </div>
+
+                {{#if fetchError}}
+                <p class="text-danger">{{fetchError}}</p>
+                {{/if}}
+            </div>
+        </div>
+    </section>
+</body>
+</html>
+
+==================================================
+文件路径: src\views\normalPages\normalOrders.hbs
+文件名: normalOrders.hbs
+文件内容:
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>当前订单 - 美食订餐</title>
+</head>
+<body>
+    {{> navbar loginUser=loginUser}}
+    <section>
+        <div class="container-fluid pb-5">
+            {{> userBar}}
+
+            <div class="container userSection">
+                <div class="text-center mb-3">
+                    <h4>当前未完成订单</h4>
+                </div>
+                <div class="row">
+                    {{#each orderFood}}
+                    <div class="card mb-4">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <img style="height:200px" src="/static/dishImages/{{this.photo}}" class="img-fluid p-3" alt="订单菜品">
+                            </div>
+                            <div class="col-md-8 py-3">
+                                <h5 class="text-primary">订单编号：{{this._id}}</h5>
+                                <p>菜名：{{this.dname}}</p>
+                                <p>价格：￥{{this.price}}</p>
+                                <p>数量：{{this.quantity}}</p>
+                                <p>状态：{{this.states}}</p>
+                                <p>取餐时间：{{this.pickupTime}}</p>
+                                <p>特殊需求：{{this.specialRequests}}</p>
+
+                                <div class="text-end">
+                                    {{#ifCancelOrder this.states this._id}}{{/ifCancelOrder}}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {{/each}}
+
+                    {{#unless orderFood.length}}
+                    <div class="text-center my-5">
+                        <h2 class="text-primary">您当前没有未完成的订单</h2>
+                    </div>
+                    {{/unless}}
+
+                    {{#if cancelOrder}}
+                    <script>
+                        Swal.fire({
+                            title: '订单已取消',
+                            icon: 'success',
+                            confirmButtonText: '好的'
+                        })
+                    </script>
+                    {{/if}}
+
+                </div>
+            </div>
+        </div>
+    </section>
+</body>
+</html>
+
+==================================================
+文件路径: src\views\partials\navbar.hbs
+文件名: navbar.hbs
+文件内容:
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css">
+<script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
+<script src="/static/js/script.js"></script>
+
+<nav class="navbar navbar-expand-lg bg-light fixed-top">
+  <div class="container">
+    <a class="navbar-brand" href="/"><img src="/static/image/logo.png" style="height:auto;width:130px" alt="Logo"></a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" 
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+        <!-- 首页 -->
+        <li class="nav-item">
+          <a class="nav-link" href="/">首页</a>
+        </li>
+        <!-- 菜品 -->
+        <li class="nav-item">
+          <a class="nav-link" href="/foods/1">浏览菜品</a>
+        </li>
+        <!-- 购物车 -->
+        <li class="nav-item">
+          <a class="nav-link" data-bs-toggle="modal" data-bs-target="#staticBackdrop">
+            <i class="fas fa-shopping-basket"></i>
+            <small class="cart-num"></small>
+          </a>
+        </li>
+        {{#if loginUser}}
+        <!-- 如果已登录，展示用户名 -->
+        <li class="nav-item">
+          <a class="nav-link" href="/dashboard">{{loginUser.name}}</a>
+        </li>
+        {{else}}
+        <!-- 未登录 -->
+        <li class="nav-item">
+          <a class="nav-link" href="/register">注册</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/login">登录</a>
+        </li>
+        {{/if}}
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- 购物车弹窗 Modal -->
+<div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+     aria-labelledby="staticBackdropLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">您的购物车</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
+      </div>
+      <div class="modal-body cart-body">
+        <!-- 购物车物品通过JS动态渲染 -->
+      </div>
+      <div class="modal-footer">
+        {{#if loginUser}}
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+        <a href="/user/orderFood" type="button" class="btn btn-primary checkout-btn">去结算</a>
+        {{else}}
+        <small class="text-danger">请先登录后再进行结算</small>
+        {{/if}}
+      </div>
+    </div>
+  </div>
+</div>
+
+==================================================
+文件路径: src\views\partials\sidebar.hbs
+文件名: sidebar.hbs
+文件内容:
+<div class="sidebar bg-dark text-light p-3" style="min-height:100vh;">
+    <div class="text-center my-4">
+        <!-- 根据用户类型显示不同菜单 -->
+        {{#if (eq loginUser.type 'admin')}}
+            <h5>管理员后台</h5>
+        {{else if (eq loginUser.type 'employee')}}
+            <h5>员工后台</h5>
+        {{else if (eq loginUser.type 'manager')}}
+            <h5>经理后台</h5>
+        {{/if}}
+    </div>
+
+    {{#if (eq loginUser.type 'admin')}}
+        <div class="mb-3"><a class="text-light" href="/dashboard">仪表盘</a></div>
+        <div class="mb-3"><a class="text-light" href="/admin/addDish">添加新菜品</a></div>
+        <div class="mb-3"><a class="text-light" href="/admin/dishMenus/1">菜品管理</a></div>
+        <div class="mb-3"><a class="text-light" href="/admin/adminOrder/1">订单列表</a></div>
+    {{/if}}
+
+    {{#if (eq loginUser.type 'employee')}}
+        <div class="mb-3"><a class="text-light" href="/employee/dashboard">仪表盘</a></div>
+        <div class="mb-3"><a class="text-light" href="/employee/orders/1">订单管理</a></div>
+        <div class="mb-3"><a class="text-light" href="/employee/history/1">历史订单</a></div>
+        <div class="mb-3"><a class="text-light" href="/employee/markOutOfStock">库存管理</a></div>
+    {{/if}}
+
+    {{#if (eq loginUser.type 'manager')}}
+        <div class="mb-3"><a class="text-light" href="/manager/dashboard">仪表盘</a></div>
+        <div class="mb-3"><a class="text-light" href="/manager/users">用户管理</a></div>
+        <div class="mb-3"><a class="text-light" href="/manager/allOrders">订单管理</a></div>
+        <div class="mb-3"><a class="text-light" href="/manager/history">历史订单</a></div>
+        <!-- 也可添加“促销管理”、“报表”链接等 -->
+    {{/if}}
+
+    <!-- 通用退出按钮 -->
+    <div class="mt-5">
+        <a class="text-light" href="/logout">退出登录</a>
+    </div>
+</div>
+
+==================================================
+文件路径: src\views\partials\userBar.hbs
+文件名: userBar.hbs
+文件内容:
+<ul class="nav justify-content-center bg-dark p-2 userNavBar">
+    <li class="nav-item">
+        <a class="nav-link text-light" href="/dashboard">我的主页</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link text-light" href="/user/orders">当前订单</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link text-light" href="/user/orderFood">购物车结算</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link text-light" href="/user/history">历史订单</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link text-light" href="/user/favourites">我的收藏</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link text-light" href="/logout">退出登录</a>
+    </li>
+</ul>
+
+==================================================

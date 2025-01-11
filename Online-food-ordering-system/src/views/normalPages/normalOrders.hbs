@@ -1,13 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>当前订单 - 美食订餐</title>
 </head>
-
 <body>
     {{> navbar loginUser=loginUser}}
     <section>
@@ -15,57 +12,52 @@
             {{> userBar}}
 
             <div class="container userSection">
-                <div class="text-center mb-1">
-                    <h4><span class="primary-color">FOODIES</span> Current Order.</h4>
+                <div class="text-center mb-3">
+                    <h4>当前未完成订单</h4>
                 </div>
                 <div class="row">
                     {{#each orderFood}}
-                    <div class="card">
+                    <div class="card mb-4">
                         <div class="row">
-                            <div class="col-md-4 offset-md-2">
-                                <img style="height:200px" src="/static/dishImage/{{this.photo}}" class="img-fluid p-3"
-                                    alt="">
+                            <div class="col-md-4">
+                                <img style="height:200px" src="/static/dishImages/{{this.photo}}" class="img-fluid p-3" alt="订单菜品">
                             </div>
-                            <div class="col-md-6 py-3">
-                                <h5 class="primary-color">Order_id : {{this._id}}</h5>
-                                <h4>Dish name : {{this.dname}}</h4>
-                                <h4>Price : <i class="fa fa-usd"></i>{{this.price}}</h4>
-                                <h4>Quantity : {{this.quantity}}</h4>
-                                <h4>States :{{this.states}} </h4>
-                                <div class="text-right">
+                            <div class="col-md-8 py-3">
+                                <h5 class="text-primary">订单编号：{{this._id}}</h5>
+                                <p>菜名：{{this.dname}}</p>
+                                <p>价格：￥{{this.price}}</p>
+                                <p>数量：{{this.quantity}}</p>
+                                <p>状态：{{this.states}}</p>
+                                <p>取餐时间：{{this.pickupTime}}</p>
+                                <p>特殊需求：{{this.specialRequests}}</p>
+
+                                <div class="text-end">
                                     {{#ifCancelOrder this.states this._id}}{{/ifCancelOrder}}
-                                    
                                 </div>
                             </div>
                         </div>
-
                     </div>
                     {{/each}}
-                    {{#if orderFood}}
-                    {{else}}
+
+                    {{#unless orderFood.length}}
                     <div class="text-center my-5">
-                        <h2 class="primary-color">Current order not present...</h2>
+                        <h2 class="text-primary">您当前没有未完成的订单</h2>
                     </div>
+                    {{/unless}}
+
+                    {{#if cancelOrder}}
+                    <script>
+                        Swal.fire({
+                            title: '订单已取消',
+                            icon: 'success',
+                            confirmButtonText: '好的'
+                        })
+                    </script>
                     {{/if}}
 
-
                 </div>
-
             </div>
         </div>
     </section>
 </body>
-
 </html>
-
-{{#if cancelOrder}}
-<script>
-    Swal.fire({
-        title: 'Order cancel',
-        text: 'Order is canceled successfully,...',
-        icon: 'success',
-        confirmButtonText: 'Ok!'
-    })
-</script>
-
-{{/if}}

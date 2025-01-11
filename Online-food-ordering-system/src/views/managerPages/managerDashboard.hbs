@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>经理面板 - 美食订餐</title>
+</head>
+<body>
+  {{> navbar loginUser=loginUser}}
+
+  <section>
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-md-3">
+          {{> sidebar}}
+        </div>
+        <div class="col-md-9">
+          <div class="card m-3 p-3">
+            <h3 class="text-center mb-4">经理面板</h3>
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <div class="card">
+                  <div class="card-body text-center">
+                    <h5 class="card-title">用户管理</h5>
+                    <p class="card-text">查看并编辑所有用户资料。</p>
+                    <a href="/manager/users" class="btn btn-primary">前往</a>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-4 mb-3">
+                <div class="card">
+                  <div class="card-body text-center">
+                    <h5 class="card-title">所有订单</h5>
+                    <p class="card-text">查看订单及支付状态。</p>
+                    <a href="/manager/allOrders" class="btn btn-primary">前往</a>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-4 mb-3">
+                <div class="card">
+                  <div class="card-body text-center">
+                    <h5 class="card-title">历史记录</h5>
+                    <p class="card-text">查看全部历史订单。</p>
+                    <a href="/manager/history" class="btn btn-primary">前往</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <p class="text-center mt-3">欢迎使用经理后台，您可以跟进销售数据、设置促销活动等。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</body>
+</html>

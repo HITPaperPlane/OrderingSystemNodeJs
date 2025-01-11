@@ -1,40 +1,38 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>历史订单 - 美食订餐</title>
 </head>
-
 <body>
     {{> navbar loginUser=loginUser}}
     <section>
         <div class="container-fluid pb-5">
             {{> userBar}}
-            <div class="container">
 
-                <div class="card p-md-4">
-                    <div class="text-center mb-3">
-                        <h4><span class="primary-color">FOODIES</span> history.</h4>
-                    </div>
+            <div class="container">
+                <div class="card p-4">
+                    <h4 class="text-center">历史订单</h4>
+                    <hr>
                     <table class="table table-hover">
                         <thead>
-                            <td>Pic</td>
-                            <td>Dish Name</td>
-                            <td>Time</td>
-                            <td>Price</td>
-                            <td>Quantity</td>
-                            <td>Payment Type</td>
-                            <td>States</td>
+                            <tr>
+                                <th>图片</th>
+                                <th>菜名</th>
+                                <th>下单时间</th>
+                                <th>价格(元)</th>
+                                <th>数量</th>
+                                <th>支付方式</th>
+                                <th>订单状态</th>
+                                <th>评价</th>
+                            </tr>
                         </thead>
                         <tbody>
                             {{#each history}}
                             <tr>
                                 <td>
-                                    <img style="width:50px;height:50px;border-radius:50%"
-                                        src="/static/dishImage/{{this.photo}}" alt="">
+                                    <img style="width:50px;height:50px;border-radius:50%" src="/static/dishImages/{{this.photo}}" alt="订单菜图">
                                 </td>
                                 <td>{{this.dname}}</td>
                                 <td>{{this.time}}</td>
@@ -42,17 +40,37 @@
                                 <td>{{this.quantity}}</td>
                                 <td>{{this.paymentType}}</td>
                                 <td>{{this.states}}</td>
+                                <td>
+                                  <!-- 只有订单完成后才能评价 -->
+                                  {{#if (eq this.states "Order completed.")}}
+                                  <form action="/user/feedback" method="post" style="display:flex; gap:4px;">
+                                    <input type="hidden" name="orderId" value="{{this._id}}">
+                                    <select name="rating" class="form-select form-select-sm" required>
+                                      <option value="" disabled selected>评分</option>
+                                      <option value="1">1星</option>
+                                      <option value="2">2星</option>
+                                      <option value="3">3星</option>
+                                      <option value="4">4星</option>
+                                      <option value="5">5星</option>
+                                    </select>
+                                    <input type="text" class="form-control form-control-sm" name="comment" placeholder="评价内容">
+                                    <button class="btn btn-sm btn-success">提交</button>
+                                  </form>
+                                  {{else}}
+                                  <small>尚未完成或已评价</small>
+                                  {{/if}}
+                                </td>
                             </tr>
                             {{/each}}
                         </tbody>
                     </table>
                 </div>
 
+                {{#if fetchError}}
+                <p class="text-danger">{{fetchError}}</p>
+                {{/if}}
             </div>
-
-
         </div>
     </section>
 </body>
-
 </html>

@@ -19,7 +19,7 @@ def write_files_content_to_txt(folder_path, output_file):
                     output.write("="*50 + "\n")
 
 if __name__ == "__main__":
-    folder_path = "views"
-    output_file = "outputview.txt"  # 输出文件
+    folder_path = "src"
+    output_file = "output2.txt"  # 输出文件
     write_files_content_to_txt(folder_path, output_file)
     print(f"内容已保存到 {output_file}")

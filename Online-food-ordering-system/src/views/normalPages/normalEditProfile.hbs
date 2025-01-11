@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>编辑个人资料 - 美食订餐</title>
+</head>
+<body>
+{{> navbar loginUser=loginUser}}
+
+<section>
+  <div class="container-fluid pb-5">
+    {{> userBar}}
+
+    <div class="container my-4">
+      <div class="row">
+        <div class="col-md-6 offset-md-3">
+          <div class="card p-3">
+            <h4 class="mb-3">编辑个人资料</h4>
+            <form action="/user/saveProfile" method="POST" enctype="multipart/form-data">
+              <div class="mb-3">
+                <label for="name" class="form-label">姓名</label>
+                <input type="text" class="form-control" id="name" name="name" value="{{loginUser.name}}" required>
+              </div>
+              <div class="mb-3">
+                <label for="email" class="form-label">邮箱</label>
+                <input type="email" class="form-control" id="email" name="email" value="{{loginUser.email}}" required>
+              </div>
+              <div class="mb-3">
+                <label for="phone" class="form-label">手机号</label>
+                <input type="text" class="form-control" id="phone" name="phone" value="{{loginUser.phone}}" required>
+              </div>
+              <div class="mb-3">
+                <label for="password" class="form-label">密码</label>
+                <input type="password" class="form-control" id="password" name="password" value="{{loginUser.password}}" required>
+              </div>
+              <div class="mb-3">
+                <label for="address" class="form-label">地址</label>
+                <textarea class="form-control" id="address" name="address" rows="2" required>{{loginUser.address}}</textarea>
+              </div>
+              <div class="mb-3">
+                <label for="photo" class="form-label">头像</label>
+                <input type="file" class="form-control" id="photo" name="photo">
+                {{#if loginUser.photo}}
+                  <img src="/static/userImages/{{loginUser.photo}}" alt="用户头像" style="width:80px; height:80px; margin-top:8px; border-radius:50%;">
+                {{/if}}
+              </div>
+              <button type="submit" class="btn btn-success">保存</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+  </div>
+</section>
+
+</body>
+</html>

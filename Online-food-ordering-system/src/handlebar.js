@@ -1,10 +1,11 @@
 const { handlebars } = require("hbs");
 
-// Register existing helpers
+// 已有的helper
 handlebars.registerHelper('times', function (n, block) {
-    var accum = '';
-    for (var i = 1; i <= n; i++)
+    let accum = '';
+    for (let i = 1; i <= n; i++){
         accum += block.fn(i);
+    }
     return accum;
 });
 handlebars.registerHelper('nextPage', function (n, block) {
@@ -14,52 +15,50 @@ handlebars.registerHelper('prevPage', function (n, block) {
     return Number(n) - 1;
 });
 handlebars.registerHelper('ifnext', function (currentPage, endPage, block) {
-    if (Number(currentPage) >= Number(endPage))
+    if (Number(currentPage) >= Number(endPage)) {
         return 'disabled';
-    else
+    } else {
         return false;
+    }
 });
 handlebars.registerHelper('ifprev', function (currentPage, block) {
-    console.log(currentPage);
-    if (Number(currentPage) <= 1)
+    if (Number(currentPage) <= 1) {
         return 'disabled';
-    else
+    } else {
         return false;
+    }
 });
 handlebars.registerHelper("active", function (active, currentPage, block) {
-    console.log(active + " :: " + currentPage);
-    if (active == currentPage)
+    if (active == currentPage) {
         return 'active';
-    else
+    } else {
         return false;
+    }
 });
 handlebars.registerHelper('json', function (context) {
     return JSON.stringify(context).replace(/"/g, '&quot;');
 });
 handlebars.registerHelper('discount', function (price, discount, block) {
-    console.log("discount is " + (price - ((price * discount) / 100)));
-
-    let discountPrice = parseFloat(price - ((price * discount) / 100)).toFixed(2);
-    console.log(price + "%" + discount + " discount price is : " + discountPrice);
+    const discountPrice = parseFloat(price - ((price * discount) / 100)).toFixed(2);
     return discountPrice;
 });
 handlebars.registerHelper("ifStates", function (states, id, block) {
-    console.log(states);
+    // 保留给admin示例使用
     if (states === "NA") {
-        return '<td><a href="/admin/cooking/' + id + '" class="btn states-btn btn-outline-success btn-sm">Cooking</a></td>';
+        return '<td><a href="/admin/cooking/' + id + '" class="btn states-btn btn-outline-success btn-sm">烹饪中</a></td>';
     } else if (states === "Cooking") {
-        return '<td><a href="/admin/deliver/' + id + '" class="btn states-btn btn-outline-warning btn-sm ">Deliver</a></td>';
+        return '<td><a href="/admin/deliver/' + id + '" class="btn states-btn btn-outline-warning btn-sm ">派送中</a></td>';
     } else if (states === "Out for delivery.") {
-        return '<td><a href="/admin/handover/' + id + '" class="btn states-btn btn-outline-danger btn-sm">Handover</a></td>';
+        return '<td><a href="/admin/handover/' + id + '" class="btn states-btn btn-outline-danger btn-sm">订单完成</a></td>';
     } else {
-        return '<td><a class="btn btn-outline-dark states-btn btn-sm disabled">Completed</a></td>';
+        return '<td><a class="btn btn-outline-dark states-btn btn-sm disabled">已完成</a></td>';
     }
 });
 handlebars.registerHelper("ifCancelOrder", function (states, id, block) {
     if (states === "NA") {
-        return '<a href="/user/cancelOrder/' + id + '" class="main-btn">Cancel order</a>';
+        return '<a href="/user/cancelOrder/' + id + '" class="main-btn">取消订单</a>';
     }
 });
-handlebars.registerHelper('eq', function (a, b) { // 新增 helper: eq
+handlebars.registerHelper('eq', function (a, b) {
     return a === b;
 });

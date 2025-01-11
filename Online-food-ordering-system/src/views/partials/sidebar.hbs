@@ -1,43 +1,39 @@
-<div class="sidebar">
+<div class="sidebar bg-dark text-light p-3" style="min-height:100vh;">
     <div class="text-center my-4">
-        <h4>
-            {{#if (eq loginUser.type 'admin')}}
-                <a class="text-light letter-spacing" href="/dashboard">Admin Dashboard</a>
-            {{else if (eq loginUser.type 'employee')}}
-                <a class="text-light letter-spacing" href="/employee/dashboard">Employee Dashboard</a>
-            {{/if}}
-        </h4>
+        <!-- 根据用户类型显示不同菜单 -->
+        {{#if (eq loginUser.type 'admin')}}
+            <h5>管理员后台</h5>
+        {{else if (eq loginUser.type 'employee')}}
+            <h5>员工后台</h5>
+        {{else if (eq loginUser.type 'manager')}}
+            <h5>经理后台</h5>
+        {{/if}}
     </div>
+
     {{#if (eq loginUser.type 'admin')}}
-        <div class="text-center my-4">
-            <h4><a class="text-light letter-spacing" href="/admin/addDish">Add New Dish</a></h4>
-        </div>
-        <div class="text-center my-4">
-            <h4><a class="text-light letter-spacing" href="/admin/dishMenus/1">Show Food Table</a></h4>
-        </div>
-        <div class="text-center my-4">
-            <h4><a class="text-light letter-spacing" href="/admin/adminOrder/1">User Orders</a></h4>
-        </div>
+        <div class="mb-3"><a class="text-light" href="/dashboard">仪表盘</a></div>
+        <div class="mb-3"><a class="text-light" href="/admin/addDish">添加新菜品</a></div>
+        <div class="mb-3"><a class="text-light" href="/admin/dishMenus/1">菜品管理</a></div>
+        <div class="mb-3"><a class="text-light" href="/admin/adminOrder/1">订单列表</a></div>
     {{/if}}
 
     {{#if (eq loginUser.type 'employee')}}
-        <div class="text-center my-4">
-            <h4><a class="text-light letter-spacing" href="/employee/orders/1">Manage Orders</a></h4>
-        </div>
-        <div class="text-center my-4">
-            <h4><a class="text-light letter-spacing" href="/employee/history/1">Order History</a></h4>
-        </div>
-        <div class="text-center my-4">
-            <h4><a class="text-light letter-spacing" href="/employee/markOutOfStock">Mark Out-of-Stock</a></h4>
-        </div>
+        <div class="mb-3"><a class="text-light" href="/employee/dashboard">仪表盘</a></div>
+        <div class="mb-3"><a class="text-light" href="/employee/orders/1">订单管理</a></div>
+        <div class="mb-3"><a class="text-light" href="/employee/history/1">历史订单</a></div>
+        <div class="mb-3"><a class="text-light" href="/employee/markOutOfStock">库存管理</a></div>
     {{/if}}
 
-    <div class="text-center my-4">
-        <h4><a class="text-light letter-spacing" href="/logout">Logout</a></h4>
+    {{#if (eq loginUser.type 'manager')}}
+        <div class="mb-3"><a class="text-light" href="/manager/dashboard">仪表盘</a></div>
+        <div class="mb-3"><a class="text-light" href="/manager/users">用户管理</a></div>
+        <div class="mb-3"><a class="text-light" href="/manager/allOrders">订单管理</a></div>
+        <div class="mb-3"><a class="text-light" href="/manager/history">历史订单</a></div>
+        <!-- 也可添加“促销管理”、“报表”链接等 -->
+    {{/if}}
+
+    <!-- 通用退出按钮 -->
+    <div class="mt-5">
+        <a class="text-light" href="/logout">退出登录</a>
     </div>
 </div>
-
-<!-- Register Handlebars Helper for Equality Check -->
-<script>
-    // Assuming you have registered a helper named 'eq' in handlebar.js
-</script>

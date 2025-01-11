@@ -1,63 +1,58 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Employee Dashboard</title>
+    <title>员工面板 - 美食订餐</title>
 </head>
 
 <body>
-    {{>navbar loginUser=loginUser}}
+    {{> navbar loginUser=loginUser}}
 
     <section>
         <div class="container-fluid">
             <div class="row">
                 <div class="col-md-3">
-                    <!-- Sidebar -->
-                    {{>sidebar}}
+                    {{> sidebar}}
                 </div>
                 <div class="col-md-9">
-                    <div class="employeePanel card">
-                        <div class="text-center my-3">
-                            <h3><span class="primary-color">FOODIES</span> Employee Dashboard</h3>
-                        </div>
+                    <div class="card m-3 p-3">
+                        <h3 class="text-center mb-3">员工面板</h3>
                         <div class="row">
-                            <div class="col-md-4">
-                                <div class="card mb-3">
+                            <div class="col-md-4 mb-3">
+                                <div class="card">
                                     <div class="card-body text-center">
-                                        <h5 class="card-title">Manage Orders</h5>
-                                        <p class="card-text">View and update current orders.</p>
-                                        <a href="/employee/orders/1" class="btn btn-primary">Go to Orders</a>
+                                        <h5 class="card-title">订单管理</h5>
+                                        <p class="card-text">查看并更新当前订单。</p>
+                                        <a href="/employee/orders/1" class="btn btn-primary">查看订单</a>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-4">
-                                <div class="card mb-3">
+                            <div class="col-md-4 mb-3">
+                                <div class="card">
                                     <div class="card-body text-center">
-                                        <h5 class="card-title">Order History</h5>
-                                        <p class="card-text">View past orders.</p>
-                                        <a href="/employee/history/1" class="btn btn-primary">View History</a>
+                                        <h5 class="card-title">历史订单</h5>
+                                        <p class="card-text">查看以往订单记录。</p>
+                                        <a href="/employee/history/1" class="btn btn-primary">历史记录</a>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-4">
-                                <div class="card mb-3">
+                            <div class="col-md-4 mb-3">
+                                <div class="card">
                                     <div class="card-body text-center">
-                                        <h5 class="card-title">Manage Inventory</h5>
-                                        <p class="card-text">Mark dishes as out-of-stock.</p>
-                                        <a href="/employee/markOutOfStock" class="btn btn-primary">Manage Inventory</a>
+                                        <h5 class="card-title">库存管理</h5>
+                                        <p class="card-text">将菜品标记为缺货或补货。</p>
+                                        <a href="/employee/markOutOfStock" class="btn btn-primary">库存管理</a>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <!-- Additional dashboard widgets can be added here -->
+                        <p class="text-center">欢迎使用员工后台！您可以查看订单详情并根据取餐时间进行优先处理。</p>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 </body>
-
 </html>

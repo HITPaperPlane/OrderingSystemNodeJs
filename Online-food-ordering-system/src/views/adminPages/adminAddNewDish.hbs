@@ -1,102 +1,85 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add new dish</title>
+    <title>添加新菜品 - 管理员</title>
 </head>
 
 <body>
-    {{>navbar loginUser=loginUser}}
+    {{> navbar loginUser=loginUser}}
 
     <section>
         <div class="container-fluid">
-            <div class="">
-                <div class="row">
-                    <div class="col-md-3">
-                        <!-- sidebar -->
-                        {{>sidebar}}
-                    </div>
-                    <div class="col-md-9 ">
-                        <div class="adminPanel card">
-                            <div class="text-center my-1">
-                                <h4><span class="primary-color">FOODIES</span> New Dish.</h4>
-                            </div>
-                            <div class="mb-4 mt-2 mx-2">
-                                <div class="row">
-                                    <div class="col-md-8 offset-md-2 shadow">
+            <div class="row">
+                <!-- 侧边栏 -->
+                <div class="col-md-3">
+                    {{> sidebar}}
+                </div>
+                <div class="col-md-9">
+                    <div class="card m-3 p-3">
+                        <h4 class="text-center">添加新菜品</h4>
+                        <div class="row">
+                            <div class="col-md-8 offset-md-2">
+                                <form action="/saveDish" method="post" enctype="multipart/form-data" class="p-3 shadow">
+                                    <input name="dname" type="text" class="form-control my-2" placeholder="菜品名称" required>
+                                    <input name="dtype" type="text" class="form-control my-2" placeholder="菜品类型，如：主食、甜点等" required>
 
-                                        <form action="/saveDish" method="post" enctype="multipart/form-data">
-                                            <input name="dname" type="text" class="my-2 form-control"
-                                                placeholder="Enter dish name">
-                                            <input name="dtype" type="text" class="my-2 form-control"
-                                                placeholder="Enter dish type">
-
-                                            <div class="row">
-                                                <div class="col-md-6">
-                                                    <input name="dprice" type="text" class="my-2 form-control"
-                                                        placeholder="Enter dish price">
-                                                </div>
-                                                <div class="col-md-6">
-                                                     <input name="dserve" type="text" class="my-2 form-control"
-                                                placeholder="Enter dish serve contity..">
-                                                </div>
-                                            </div>
-                                            <div class="row">
-                                                <div class="col-md-6">
-                                                   <input name="dtime" type="text" class="my-2 form-control"
-                                                placeholder="Enter required time">
-                                                </div>
-                                                <div class="col-md-6">
-                                                     <input name="ddiscount" type="text" class="my-2 form-control"
-                                                placeholder="Enter discount ..." min="0" max="100">
-                                                </div>
-                                            </div>
-
-                                            
-                                            <label class="my-2" for="photo">Food Pic : </label>
-                                            <input type="file" name="photo" id="photo">
-                                            <textarea class="my-2 form-control" name="discription" id="" cols="30"
-                                                rows="4"></textarea>
-                                            <div class="text-right">
-                                                <button class="main-btn my-2 mx-2">Add Food</button>
-                                            </div>
-                                        </form>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <input name="dprice" type="number" step="0.01" class="form-control my-2" placeholder="价格 (元)" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <input name="dserve" type="number" class="form-control my-2" placeholder="可供应份数" required>
+                                        </div>
                                     </div>
-                                </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <input name="dtime" type="text" class="form-control my-2" placeholder="烹饪时间 (分钟)">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <input name="ddiscount" type="number" class="form-control my-2" placeholder="折扣 (0-100之间)">
+                                        </div>
+                                    </div>
 
+                                    <label class="my-2" for="photo">菜品图片：</label>
+                                    <input type="file" name="photo" id="photo" required>
+
+                                    <textarea class="form-control my-2" name="discription" rows="3" placeholder="菜品描述，如主要原料、口味等"></textarea>
+
+                                    <div class="text-end">
+                                        <button class="main-btn my-2 mx-2">提交</button>
+                                    </div>
+
+                                    {{#if save}}
+                                    <script>
+                                        Swal.fire({
+                                            title: '成功',
+                                            text: '新菜品已添加！',
+                                            icon: 'success',
+                                            confirmButtonText: '好的'
+                                        })
+                                    </script>
+                                    {{/if}}
+
+                                    {{#if notsave}}
+                                    <script>
+                                        Swal.fire({
+                                            title: '出错',
+                                            text: '请检查表单信息或图片文件，未能成功保存。',
+                                            icon: 'error',
+                                            confirmButtonText: '好的'
+                                        })
+                                    </script>
+                                    {{/if}}
+                                </form>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </section>
-
-
+      </section>
 </body>
-
 </html>
-{{#if save}}
-<script>
-    Swal.fire({
-        title: 'New Dish Added!',
-        text: 'Dish is added to outr menu card...',
-        icon: 'success',
-        confirmButtonText: 'OK'
-    })
-</script>
-{{/if}}
-
-{{#if notsave}}
-<script>
-    Swal.fire({
-        title: 'Something is wrong!',
-        text: 'Please fill the important information. dish is not save to our menu card...',
-        icon: 'error',
-        confirmButtonText: 'Cancel'
-    })
-</script>
-{{/if}}

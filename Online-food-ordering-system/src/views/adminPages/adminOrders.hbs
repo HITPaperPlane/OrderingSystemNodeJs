@@ -1,40 +1,36 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Orders</title>
+    <title>所有订单 - 管理员</title>
 </head>
 
 <body>
-    {{>navbar loginUser=loginUser}}
+    {{> navbar loginUser=loginUser}}
 
     <section>
         <div class="container-fluid">
             <div class="row">
                 <div class="col-md-3">
-                    <!-- Sidebar -->
-                    {{>sidebar}}
+                    {{> sidebar}}
                 </div>
                 <div class="col-md-9">
-                    <div class="adminPanel card">
-                        <div class="text-center my-1">
-                            <h4><span class="primary-color">FOODIES</span> User Orders.</h4>
-                        </div>
-
-                        <table class="table table-hover table-striped px-md-2">
+                    <div class="card m-3 p-3">
+                        <h4 class="text-center">所有用户订单</h4>
+                        <hr>
+                        <table class="table table-hover table-striped">
                             <thead>
                                 <tr>
-                                    <th>Dish Name</th>
-                                    <th>User Name</th>
-                                    <th>Price</th>
-                                    <th>Quantity</th>
-                                    <th>Address</th>
-                                    <th>Pickup Time</th>
-                                    <th>Special Requests</th>
-                                    <th>Action</th>
+                                    <th>菜名</th>
+                                    <th>下单用户</th>
+                                    <th>价格(元)</th>
+                                    <th>数量</th>
+                                    <th>收货地址</th>
+                                    <th>取餐时间</th>
+                                    <th>特殊需求</th>
+                                    <th>状态更新</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -47,49 +43,36 @@
                                     <td>{{this.user.address}}</td>
                                     <td>{{this.pickupTime}}</td>
                                     <td>{{this.specialRequests}}</td>
-                                    <td>
-                                        {{#ifStates this.states this._id}}{{/ifStates}}
-                                    </td>
+                                    {{#ifStates this.states this._id}}{{/ifStates}}
                                 </tr>
                                 {{/each}}
                             </tbody>
                         </table>
 
-                        <nav aria-label="Page navigation example" class="mt-3 mb-5">
+                        <!-- 分页 -->
+                        <nav aria-label="Page navigation" class="mt-3 mb-5">
                             <ul class="pagination justify-content-end">
                                 <li class="page-item">
-                                    <a class="page-link {{#ifprev currentPage}}"disabled"{{/ifprev}}" href="/admin/adminOrder/{{#prevPage currentPage}}{{/prevPage}}" aria-label="Previous">
+                                    <a class="page-link {{#ifprev currentPage}}{{/ifprev}}"
+                                       href="/admin/adminOrder/{{#prevPage currentPage}}{{/prevPage}}" aria-label="Previous">
                                         <span aria-hidden="true">&laquo;</span>
-                                        <span class="sr-only">Previous</span>
                                     </a>
                                 </li>
                                 {{#times count}}
-                                <li class="page-item {{#active this currentPage}}{{/active}}"><a class="page-link" href="/admin/adminOrder/{{this}}">{{this}}</a></li>
+                                <li class="page-item"><a class="page-link" href="/admin/adminOrder/{{this}}">{{this}}</a></li>
                                 {{/times}}
                                 <li class="page-item">
-                                    <a class="page-link {{#ifnext currentPage count}}"disabled"{{/ifnext}}" href="/admin/adminOrder/{{#nextPage currentPage}}{{/nextPage}}" aria-label="Next">
+                                    <a class="page-link {{#ifnext currentPage count}}{{/ifnext}}"
+                                       href="/admin/adminOrder/{{#nextPage currentPage}}{{/nextPage}}" aria-label="Next">
                                         <span aria-hidden="true">&raquo;</span>
-                                        <span class="sr-only">Next</span>
                                     </a>
                                 </li>
                             </ul>
                         </nav>
                     </div>
-
-                    {{#if delete}}
-                    <script>
-                        Swal.fire({
-                            title: 'Dish Deleted!',
-                            text: 'The dish has been removed from the menu.',
-                            icon: 'success',
-                            confirmButtonText: 'OK'
-                        });
-                    </script>
-                    {{/if}}
                 </div>
             </div>
         </div>
     </section>
 </body>
-
 </html>

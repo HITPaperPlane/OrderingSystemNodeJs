@@ -1,39 +1,3 @@
-阅读用户故事和当前代码，修改代码，实现所有用户故事，并且把前端页面等等改成简体中文，返回代码时以
-文件+文件全部完整代码的方式返回，不要返回代码片段了
-用户故事As a tourist, I want to see an attractive homepage, so that I can browse the menu.	The homepage features a visually appealing design, including high-quality images, clear navigation, and a welcoming banner.
-A responsive layout ensures the homepage displays attractively on both desktop and mobile devices.
-As a tourist, I want to register into membership, so that I can order my dishes.	Upon successful registration, the system redirects tourists to the menu page or their user dashboard.
-As a member, I want to edit my profile, so that I can modify password and upload the photos etc.	Update the profiles details.
-As a member, I want to browse the menu with detailed descriptions and ingredients, so that I can make informed choices based on my preferences and dietary restrictions.	Customers can view all menu items with descriptions and ingredient lists.
-As a member, I want to place an order online and specify a pick-up time, so that my order is ready when I arrive.	Customers can select items, customize options (e.g., special requests, allergies), and specify a pick-up time.
-As a member, I want to make secure online payments, so that I can avoid delays during pick-up.	Orders are processed with secure payment gateways (e.g., credit/debit cards or digital wallets).
-As a member, I want to receive notifications when my order is ready for pick-up, so that I don’t have to wait unnecessarily at the restaurant.	Notifications are sent via email or SMS when the order is ready.
-As a member, I want to cancel my order within a specified timeframe, so that I can adjust my plans without causing inconvenience.	Order cancellations are allowed up to 30 minutes before the scheduled pick-up time.
-As a member, I want to save my favorite dishes to a personalized list, so that I can reorder them easily in the future.	Customers can add items to a “Favourites” list and access it from their profile.
-As a member, I want to provide feedback on my orders, so that I can share my experience with the restaurant.	Customers can leave a rating and comments for each completed order.
-As a member, I want to add items to a cart so that I can review my selection before ordering.	Add and review items in the cart before placing an order.
-
-As a staff, I want to receive alerts with detailed order information, so that I can prepare the food accurately and efficiently.	Staff receive a clear and concise alert for every order placed, including details like pick-up time, special requests, and customer names.
-As a staff, I want the system to prioritize orders by pick-up times, so that I can focus on the most urgent orders first.	Orders are displayed in a queue, prioritized by pick-up time.
-As a staff, I want to see any special requests or dietary restrictions highlighted, so that I can avoid errors when preparing meals.	Special requests or dietary notes are highlighted in bold or color-coded within the order details.
-As a staff, I want access to a historical record of past orders, so that I can refer back to customer preferences or resolve complaints effectively.	Staff can access a dedicated “Order History” section in the system. The section displays all past orders, organized by date and time.
-As a staff, I want to mark menu items as “out of stock” temporarily, so that customers are informed in real-time.	Staff can update stock status, and out-of-stock items are hidden from the customer menu immediately.
-As a staff, I want to mark orders as ‘in progress’ or ‘completed’ so that the system updates the order status automatically.	Order status updates automatically when staff mark them ‘in progress’ or ‘completed’.
-As a staff, I want to prioritize orders by pick-up times so that urgent orders are completed first.	Orders are sorted and displayed by pick-up times.
-As a manager, I want to edit my profile, so that I can modify password and upload the photos etc.	Access their profile settings from the dashboard. The profile settings page allows the manager to update their name, email address, contact number, and profile photo.
-As a manager, I want a dashboard so that I can update the members and staffs’ profiles.	The profile settings page allows the manager to update members and staffs profile details.
-As a manager, I want to track all customer orders and payment statuses, so that I can monitor sales and address issues promptly.	Managers have access to a dashboard showing real-time order updates and payment statuses.
-As a manager, I want to update the menu, including items, prices, and ingredient details, so that customers always have the latest information.	Managers can add, remove, or edit menu items, descriptions, prices, and availability.
-As a manager, I want to generate reports on order trends and customer preferences, so that I can make informed business decisions.	The system generates weekly/monthly reports, including sales trends, popular items, and order volume.
-As a manager, I want to set up promotions or discounts for specific menu items to attract more customers and reduce food waste	The manager can create new promotions or discounts by selecting specific menu items, setting a discount percentage or fixed amount, and specifying a start and end date.
-As a manager, I want to receive weekly sales summaries, so that I can evaluate the restaurant’s performance.	The system automatically generates and emails a sales summary every Sunday.
-As a manager, I want to add, edit, or remove menu items so that the menu is always up to date.
-	Managers can add, update, or remove menu items with descriptions and prices.
-As a manager, I want to receive alerts for low-stock ingredients so that I can reorder them in time.	Low-stock alerts are sent to managers via email or SMS.
-As a manager, I want to monitor customer feedback so that I can address complaints and improve service.	Customer feedback is visible in a dedicated dashboard with options to respond.
-As a manager, I want a dashboard, so that I can see a historical records of past orders.	Display the details of all past orders.
-
-当前代码
 文件路径: src\app.js
 文件名: app.js
 文件内容:

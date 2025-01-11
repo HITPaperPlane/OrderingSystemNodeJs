@@ -1,133 +1,126 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Checkout</title>
+    <title>确认下单 - 美食订餐</title>
 </head>
-
 <body>
     {{> navbar loginUser=loginUser}}
+
     <section>
         <div class="container-fluid pb-5">
             {{> userBar}}
 
             <div class="container userSection">
                 <div class="row">
-
                     <div class="col-md-3">
-                        <h4>Payment Type</h4>
+                        <h4>支付方式</h4>
                         <div class="form-check">
                             <input class="form-check-input" type="radio" name="paymentType" id="offline" value="cash on delivery">
                             <label class="form-check-label" for="offline">
-                                Cash on Delivery
+                                到店付款
                             </label>
                         </div>
                         <div class="form-check">
                             <input class="form-check-input" type="radio" name="paymentType" id="online" value="online">
                             <label class="form-check-label" for="online">
-                                Online Payment
+                                在线支付
                             </label>
                         </div>
 
-                        <h4 class="mt-4">Pickup Time</h4>
+                        <h4 class="mt-4">取餐时间</h4>
                         <input type="datetime-local" id="pickupTime" class="form-control" name="pickupTime" required>
 
-                        <h4 class="mt-4">Special Requests</h4>
-                        <textarea id="specialRequests" class="form-control" name="specialRequests" rows="3" placeholder="Enter any special requests..."></textarea>
+                        <h4 class="mt-4">特殊需求</h4>
+                        <textarea id="specialRequests" class="form-control" name="specialRequests" rows="3" placeholder="如：不要辣、加辣、过敏原等"></textarea>
                     </div>
 
                     <div class="col-md-9">
-                        <div class="card mb-3 px-3">
-                            <h4>Name: {{loginUser.name}}</h4>
-                            <h4>Phone Number: {{loginUser.phone}}</h4>
-                            <h4>Delivery Address: {{loginUser.address}}</h4>
+                        <div class="card mb-3 px-3 py-3">
+                            <h4>收货信息</h4>
+                            <p>姓名：{{loginUser.name}}</p>
+                            <p>手机号：{{loginUser.phone}}</p>
+                            <p>收货地址：{{loginUser.address}}</p>
                         </div>
                         <div class="card">
-                            <div class="card-body cart-body"></div>
-                            <div id="orderPlaced"></div>
-
-                            <div class="text-right">
-                                <button onclick="placeOrder()" class="main-btn order-btn">Order Now !!</button>
+                            <div class="card-body cart-body">
+                                <!-- 购物车项目会通过JS渲染 -->
+                            </div>
+                            <div class="text-end p-3">
+                                <button onclick="placeOrder()" class="main-btn">提交订单</button>
                             </div>
                         </div>
                     </div>
-
                 </div>
-
             </div>
         </div>
-    </section>
-</body>
 
-</html>
+        <script>
+            function placeOrder() {
+                const cartData = localStorage.getItem('cart');
+                const paymentType = $('input[name="paymentType"]:checked').val();
+                const pickupTime = $('#pickupTime').val();
+                const specialRequests = $('#specialRequests').val();
 
-<script>
-    function placeOrder() {
-        const cartData = localStorage.getItem('cart');
-        const paymentType = $('input[name="paymentType"]:checked').val();
-        const pickupTime = $('#pickupTime').val();
-        const specialRequests = $('#specialRequests').val();
-
-        if (!paymentType) {
-            Swal.fire({
-                title: 'Select Payment Type',
-                text: 'Please select a payment type.',
-                icon: 'warning',
-                confirmButtonText: 'OK'
-            });
-            return;
-        }
-
-        if (!pickupTime) {
-            Swal.fire({
-                title: 'Select Pickup Time',
-                text: 'Please select a pickup time.',
-                icon: 'warning',
-                confirmButtonText: 'OK'
-            });
-            return;
-        }
-
-        if (cartData) {
-            $.ajax({
-                type: 'POST',
-                url: '/orderNowFromBasket',
-                data: {
-                    data: cartData,
-                    paymentType: paymentType,
-                    pickupTime: pickupTime,
-                    specialRequests: specialRequests
-                },
-                success: function (data) {
-                    localStorage.removeItem('cart');
+                if (!paymentType) {
                     Swal.fire({
-                        title: 'Order Placed!',
-                        text: 'Your order has been successfully placed.',
-                        icon: 'success',
-                        confirmButtonText: 'OK'
-                    }).then(() => {
-                        window.location.href = "/";
+                        title: '请选择支付方式',
+                        icon: 'warning',
+                        confirmButtonText: '好的'
                     });
-                },
-                error: function (xhr) {
+                    return;
+                }
+
+                if (!pickupTime) {
                     Swal.fire({
-                        title: 'Order Failed!',
-                        text: xhr.responseJSON.message || 'Something went wrong. Please try again.',
-                        icon: 'error',
-                        confirmButtonText: 'OK'
+                        title: '请选择取餐时间',
+                        icon: 'warning',
+                        confirmButtonText: '好的'
+                    });
+                    return;
+                }
+
+                if (cartData) {
+                    $.ajax({
+                        type: 'POST',
+                        url: '/orderNowFromBasket',
+                        data: {
+                            data: cartData,
+                            paymentType: paymentType,
+                            pickupTime: pickupTime,
+                            specialRequests: specialRequests
+                        },
+                        success: function (data) {
+                            localStorage.removeItem('cart');
+                            Swal.fire({
+                                title: '下单成功',
+                                text: '您的订单已提交，请等待餐厅处理。',
+                                icon: 'success',
+                                confirmButtonText: '好的'
+                            }).then(() => {
+                                window.location.href = "/";
+                            });
+                        },
+                        error: function (xhr) {
+                            Swal.fire({
+                                title: '下单失败',
+                                text: xhr.responseJSON?.message || '请稍后再试',
+                                icon: 'error',
+                                confirmButtonText: '好的'
+                            });
+                        }
+                    });
+                } else {
+                    Swal.fire({
+                        title: '购物车为空',
+                        text: '请先选择菜品再下单。',
+                        icon: 'info',
+                        confirmButtonText: '好的'
                     });
                 }
-            });
-        } else {
-            Swal.fire({
-                title: 'Cart is Empty!',
-                text: 'Please add items to your cart before placing an order.',
-                icon: 'info',
-                confirmButtonText: 'OK'
-            });
-        }
-    }
-</script>
+            }
+        </script>
+    </section>
+</body>
+</html>

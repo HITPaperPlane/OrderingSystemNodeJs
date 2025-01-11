@@ -1,80 +1,89 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Foodies Foods</title>
-
+    <title>浏览菜品 - 美食订餐</title>
 </head>
 
 <body>
-    {{>navbar loginUser=loginUser}}
+    {{> navbar loginUser=loginUser}}
 
     <section class="container-fluid">
-
         <div class="container">
+            <!-- 搜索框 -->
             <form action="/searchFood" method="post">
                 <div class="row search-panel">
-                    <div class="col-md-5 offset-md-3 mt-1">
-                        <input value="{{searchKey}}" placeholder="Serach food here,vegeterian burgur"
-                            class="form-control" type="text" name="foodSearch" id="">
+                    <div class="col-md-5 offset-md-3 mt-4">
+                        <input 
+                          value="{{searchKey}}" 
+                          placeholder="搜索菜品，例如：汉堡、沙拉" 
+                          class="form-control" 
+                          type="text" 
+                          name="foodSearch">
                     </div>
-                    <div class="col-md-1 text-center mt-1">
-                        <button type="submit" class="white-btn2">Search</button>
+                    <div class="col-md-1 text-center mt-4">
+                        <button type="submit" class="white-btn2">搜索</button>
                     </div>
                 </div>
             </form>
         </div>
+
         <div class="container">
             <div class="row my-2">
                 {{#each foods}}
                 <div class="col-md-4 my-5">
-                    <div class="card ">
-                        <img style="height:210px" src="../public/dishImage/{{this.photo}}" class="img-fluid mb-2" alt="">
-                        <h4>{{this.dname}}</h4>
-                        <p class="text-color">Time : {{this.dtime}} Minutes | Serve {{this.dserve}}</p>
-                        <h2 class="primary-color mb-3"> <i class="fa fa-usd"></i>{{#discount this.dprice
-                            this.ddiscount}}{{/discount}} <del class="text-muted"><i
-                                    class="fa fa-usd"></i>{{this.dprice}}</del></h2>
-                        <div>
-                            <button onclick="addFoodToBasket('{{this._id}}','{{this.dname}}','{{this.dprice}}','{{this.photo}}' )" class="main-btn">Add To Basket</button>
+                    <div class="card shadow-sm">
+                        <!-- 菜品图片 -->
+                        <img style="height:210px" src="/static/dishImages/{{this.photo}}" class="img-fluid mb-2" alt="菜品图片">
+                        <!-- 菜品名称 -->
+                        <h4 class="p-2">{{this.dname}}</h4>
+                        <!-- 时间 / 份数 -->
+                        <p class="text-color px-2">烹饪时间：{{this.dtime}} 分钟 | 可供应份数：{{this.dserve}}</p>
+                        <!-- 价格 + 折扣 -->
+                        <h2 class="primary-color mb-3 px-2">
+                          ￥{{#discount this.dprice this.ddiscount}}{{/discount}}
+                          <del class="text-muted">￥{{this.dprice}}</del>
+                        </h2>
+                        <p class="px-2">{{this.discription}}</p>
+                        <div class="px-2 pb-2">
+                            <!-- 加入购物车按钮 -->
+                            <button onclick="addFoodToBasket('{{this._id}}','{{this.dname}}','{{this.dprice}}','{{this.photo}}')" class="main-btn">加入购物车</button>
+
+                            <!-- 如果已登录，显示收藏按钮示例 -->
+                            {{#if loginUser}}
+                              <form style="display:inline;" action="/user/addFavourite/{{this._id}}" method="post">
+                                <button type="submit" class="white-btn2 ms-2">收藏</button>
+                              </form>
+                            {{/if}}
                         </div>
                     </div>
                 </div>
                 {{/each}}
             </div>
 
-
-
-            <nav aria-label="Page navigation example " class="mt-3 mb-5">
+            <!-- 分页 -->
+            <nav aria-label="Page navigation" class="mt-3 mb-5">
                 <ul class="pagination justify-content-end">
                     <li class="page-item">
                         <a class="page-link {{#ifprev currentPage}}{{/ifprev}}" href="/foods/{{#prevPage currentPage}}{{/prevPage}}" aria-label="Previous">
                             <span aria-hidden="true">&laquo;</span>
-                            <span class="sr-only">Previous</span>
                         </a>
                     </li>
                     {{#times count}}
-                    <li class="page-item"><a class="page-link" href="/foods/{{this}}">{{this}}</a></li>
+                    <li class="page-item">
+                      <a class="page-link" href="/foods/{{this}}">{{this}}</a>
+                    </li>
                     {{/times}}
                     <li class="page-item">
                         <a class="page-link {{#ifnext currentPage count}}{{/ifnext}}" href="/foods/{{#nextPage currentPage}}{{/nextPage}}" aria-label="Next">
                             <span aria-hidden="true">&raquo;</span>
-                            <span class="sr-only">Next</span>
                         </a>
                     </li>
                 </ul>
             </nav>
-
-
         </div>
-
-
     </section>
-
-
 </body>
-
 </html>

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>用户管理 - 经理</title>
+</head>
+<body>
+  {{> navbar loginUser=loginUser}}
+
+  <section>
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-md-3">
+          {{> sidebar}}
+        </div>
+        <div class="col-md-9">
+          <div class="card m-3 p-3">
+            <h3 class="text-center">用户管理</h3>
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>姓名</th>
+                  <th>邮箱</th>
+                  <th>电话</th>
+                  <th>地址</th>
+                  <th>类型</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                {{#each users}}
+                <tr>
+                  <td>{{this.name}}</td>
+                  <td>{{this.email}}</td>
+                  <td>{{this.phone}}</td>
+                  <td>{{this.address}}</td>
+                  <td>{{this.type}}</td>
+                  <td>
+                    <form action="/manager/updateUser/{{this._id}}" method="post" style="display:inline">
+                      <select name="type" class="form-select form-select-sm d-inline w-auto">
+                        <option value="normal" {{#if (eq this.type "normal")}}selected{{/if}}>normal</option>
+                        <option value="admin" {{#if (eq this.type "admin")}}selected{{/if}}>admin</option>
+                        <option value="employee" {{#if (eq this.type "employee")}}selected{{/if}}>employee</option>
+                        <option value="manager" {{#if (eq this.type "manager")}}selected{{/if}}>manager</option>
+                      </select>
+                      <button class="btn btn-sm btn-primary ms-2">更新</button>
+                    </form>
+                  </td>
+                </tr>
+                {{/each}}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</body>
+</html>

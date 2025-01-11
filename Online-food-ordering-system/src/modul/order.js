@@ -1,18 +1,18 @@
 const mongoose = require('mongoose');
 
-const order = mongoose.Schema({
-    dishId: String,
-    userId: String,
-    time: String,
-    pickupTime: String, // 新增字段: 取餐时间
-    specialRequests: String, // 新增字段: 特殊需求
+const orderSchema = mongoose.Schema({
+    dishId: String,           // 关联dish
+    userId: String,           // 关联user
+    time: String,             // 下单时间
+    pickupTime: String,       // 取餐时间
+    specialRequests: String,  // 特殊需求
     photo: String,
     dname: String,
     price: Number,
     quantity: Number,
-    paymentType: String,
-    states: String,
-    user: Object,
+    paymentType: String,      // 支付方式
+    states: String,           // 订单状态
+    user: Object              // 用户信息存储
 });
 
-module.exports = mongoose.model("orders", order);
+module.exports = mongoose.model("orders", orderSchema);

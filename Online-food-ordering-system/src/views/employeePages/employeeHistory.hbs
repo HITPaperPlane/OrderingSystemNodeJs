@@ -1,38 +1,33 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Order History</title>
+    <title>历史订单 - 员工</title>
 </head>
 
 <body>
-    {{>navbar loginUser=loginUser}}
-
+    {{> navbar loginUser=loginUser}}
     <section>
         <div class="container-fluid">
             <div class="row">
                 <div class="col-md-3">
-                    <!-- Sidebar -->
-                    {{>sidebar}}
+                    {{> sidebar}}
                 </div>
                 <div class="col-md-9">
-                    <div class="employeePanel card">
-                        <div class="text-center my-3">
-                            <h3><span class="primary-color">FOODIES</span> Order History</h3>
-                        </div>
+                    <div class="employeePanel card m-3 p-3">
+                        <h3 class="text-center mb-3">历史订单记录</h3>
                         <table class="table table-striped">
                             <thead>
                                 <tr>
-                                    <th>Dish Name</th>
-                                    <th>Customer Name</th>
-                                    <th>Price</th>
-                                    <th>Quantity</th>
-                                    <th>Pickup Time</th>
-                                    <th>Special Requests</th>
-                                    <th>Status</th>
+                                    <th>菜名</th>
+                                    <th>顾客</th>
+                                    <th>价格(元)</th>
+                                    <th>数量</th>
+                                    <th>取餐时间</th>
+                                    <th>特殊需求</th>
+                                    <th>订单状态</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -50,30 +45,33 @@
                             </tbody>
                         </table>
 
-                        <nav aria-label="Page navigation example" class="mt-3 mb-5">
+                        <!-- 分页 -->
+                        <nav aria-label="Page navigation" class="mt-3 mb-5">
                             <ul class="pagination justify-content-end">
                                 <li class="page-item">
-                                    <a class="page-link {{#ifprev currentPage}}"disabled"{{/ifprev}}" href="/employee/history/{{#prevPage currentPage}}{{/prevPage}}" aria-label="Previous">
+                                    <a class="page-link {{#ifprev currentPage}}{{/ifprev}}" 
+                                       href="/employee/history/{{#prevPage currentPage}}{{/prevPage}}" 
+                                       aria-label="Previous">
                                         <span aria-hidden="true">&laquo;</span>
-                                        <span class="sr-only">Previous</span>
                                     </a>
                                 </li>
                                 {{#times count}}
-                                <li class="page-item {{#active this currentPage}}{{/active}}"><a class="page-link" href="/employee/history/{{this}}">{{this}}</a></li>
+                                <li class="page-item"><a class="page-link" href="/employee/history/{{this}}">{{this}}</a></li>
                                 {{/times}}
                                 <li class="page-item">
-                                    <a class="page-link {{#ifnext currentPage count}}"disabled"{{/ifnext}}" href="/employee/history/{{#nextPage currentPage}}{{/nextPage}}" aria-label="Next">
+                                    <a class="page-link {{#ifnext currentPage count}}{{/ifnext}}" 
+                                       href="/employee/history/{{#nextPage currentPage}}{{/nextPage}}" 
+                                       aria-label="Next">
                                         <span aria-hidden="true">&raquo;</span>
-                                        <span class="sr-only">Next</span>
                                     </a>
                                 </li>
                             </ul>
                         </nav>
+
                     </div>
                 </div>
             </div>
         </div>
     </section>
 </body>
-
 </html>
