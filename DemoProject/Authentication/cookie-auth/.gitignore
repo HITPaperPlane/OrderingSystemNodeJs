@@ -1,0 +1,50 @@
+# Node.js dependencies
+node_modules/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by testing tools
+coverage/
+
+# .env environment variables file
+.env
+
+# IDE or editor specific files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+tmp/
+temp/
+
+# Compiled files and build artifacts
+dist/
+build/
+
+# Ignore Python cache (if using Python in your project)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignore package-lock.json or yarn.lock if you want to avoid locking
+# Uncomment the following lines if that's the case
+# package-lock.json
+# yarn.lock
