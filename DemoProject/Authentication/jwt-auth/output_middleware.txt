@@ -5,12 +5,12 @@ const User = require('../models/User');
 
 // 检查用户是否已认证
 const isAuthenticated = async (req, res, next) => {
-    const username = req.cookies.username;
-    if (!username) {
+    const userId = req.session.userId;
+    if (!userId) {
         return res.redirect('/login');
     }
     try {
-        const user = await User.findOne({ username });
+        const user = await User.findById(userId);
         if (!user) {
             return res.redirect('/login');
         }
@@ -43,6 +43,5 @@ module.exports = {
     isManager,
     isEmployee
 };
-
 
 ==================================================
