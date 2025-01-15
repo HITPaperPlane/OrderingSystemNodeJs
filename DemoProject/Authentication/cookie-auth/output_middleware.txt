@@ -1,13 +1,16 @@
+文件路径: middleware\auth.js
+文件名: auth.js
+文件内容:
 const User = require('../models/User');
 
 // 检查用户是否已认证
 const isAuthenticated = async (req, res, next) => {
-    const userId = req.session.userId;
-    if (!userId) {
+    const username = req.cookies.username;
+    if (!username) {
         return res.redirect('/login');
     }
     try {
-        const user = await User.findById(userId);
+        const user = await User.findOne({ username });
         if (!user) {
             return res.redirect('/login');
         }
@@ -40,3 +43,6 @@ module.exports = {
     isManager,
     isEmployee
 };
+
+
+==================================================

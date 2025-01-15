@@ -31,8 +31,8 @@ router.post('/login', async (req, res) => {
     if (!isMatch) {
       return res.status(400).send('用户名或密码错误');
     }
-    // 在Cookie中存储用户名
-    res.cookie('username', username, { httpOnly: true, maxAge: 3600000 }); // 1小时
+    // 在Session中存储用户ID
+    req.session.userId = user._id;
     // 根据角色重定向到不同的受保护页面
     if (user.role === 'manager') {
       res.redirect('/protected/manager');
@@ -49,8 +49,13 @@ router.post('/login', async (req, res) => {
 
 // 登出
 router.get('/logout', (req, res) => {
-  res.clearCookie('username');
-  res.redirect('/login');
+  req.session.destroy(err => {
+    if (err) {
+      console.error(err);
+      return res.status(500).send('服务器错误');
+    }
+    res.redirect('/login');
+  });
 });
 
 // 显示注册页面
@@ -63,6 +68,4 @@ router.get('/login', (req, res) => {
   res.render('login');
 });
 
-
 module.exports = router;
-
