@@ -3,13 +3,16 @@ const express = require('express');
 const route = express.Router();
 const path = require('path');
 const fs = require('fs');
-
+const { pool } = require('../database'); // 若需要直接用 pool.query 统计
 // 数据模型
 const User = require('../modul/user');
 const Dish = require("../modul/dish");
 const Order = require('../modul/order');
 const Favourite = require('../modul/favourite');
 const Feedback = require('../modul/feedback');
+
+// 新增：引入邮件工具
+const { sendSimpleEmail } = require('../utils/sendEmail');
 
 /**
  * 首页
@@ -36,8 +39,10 @@ route.get("/login", (req, res) => {
 });
 route.post("/saveRegistration", async (req, res) => {
     try {
-        const existingUser = await User.findOne({ email: req.body.email });
-        if (existingUser) {
+        // 先检查是否已存在
+        const allUsers = await User.findAll();
+        const existing = allUsers.find(u => u.email === req.body.email);
+        if(existing) {
             return res.render("registration", {
                 registrationError: "该邮箱已被注册，请更换邮箱。",
                 loginUser: req.session.loginUser
@@ -55,9 +60,10 @@ route.post("/saveRegistration", async (req, res) => {
         });
     }
 });
+
 route.post("/loginUser", async (req, res) => {
     try {
-        const user = await User.findOne({ email: req.body.email, password: req.body.password });
+        const user = await User.findByEmailAndPassword(req.body.email, req.body.password);
         if (!user) {
             // 用户名或密码错误
             return res.render("login", {
@@ -65,6 +71,7 @@ route.post("/loginUser", async (req, res) => {
                 email: req.body.email
             });
         }
+        // 登录成功
         req.session.loginUser = user;
         res.redirect("/dashboard");
     } catch (error) {
@@ -74,6 +81,7 @@ route.post("/loginUser", async (req, res) => {
         });
     }
 });
+
 route.get("/logout", (req, res) => {
     req.session.destroy();
     res.render("login", {
@@ -82,10 +90,7 @@ route.get("/logout", (req, res) => {
 });
 
 /**
- * Dashboard 根据角色跳转：
- *   - normal => member
- *   - admin  => manager
- *   - employee => staff
+ * Dashboard 根据角色跳转
  */
 route.get("/dashboard", (req, res) => {
     const loginUser = req.session.loginUser;
@@ -93,15 +98,12 @@ route.get("/dashboard", (req, res) => {
         return res.render("login", { loginFirst: true });
     }
     if (loginUser.type === 'normal') {
-        // member
         return res.render("normalPages/normalDashboard", { loginUser });
     }
     else if (loginUser.type === 'admin') {
-        // manager
         return res.render("adminPages/adminDashboard", { loginUser });
     }
     else if (loginUser.type === 'employee') {
-        // staff
         return res.render("employeePages/employeeDashboard", { loginUser });
     }
 });
@@ -115,9 +117,9 @@ route.get("/foods/:page", async (req, res) => {
     const total = 6;
     const skip = (page - 1) * total;
 
-    // 只显示 dserve>0(有库存) 的菜品
+    // 只显示 dserve>0
     const query = { dserve: { $gt: 0 } };
-    const foods = await Dish.find(query).skip(skip).limit(total);
+    const foods = await Dish.find(query, skip, total);
     const count = Math.ceil(await Dish.countDocuments(query) / total);
 
     res.render("showDishes", {
@@ -127,16 +129,12 @@ route.get("/foods/:page", async (req, res) => {
         currentPage: page
     });
 });
+
 route.post("/searchFood", async (req, res) => {
     try {
         const loginUser = req.session.loginUser;
         const search = req.body.foodSearch || "";
-        // 同样只搜库存>0的
-        const query = {
-            dserve: { $gt: 0 },
-            dname: new RegExp(search, 'i')
-        };
-        const foods = await Dish.find(query);
+        const foods = await Dish.searchByName(search);
         res.render("showDishes", {
             loginUser,
             foods,
@@ -152,52 +150,80 @@ route.post("/searchFood", async (req, res) => {
 });
 
 /**
- * 购物车 - 结算（下单）
+ * 购物车 - 结算（下单）(仅 normal 用户)
  */
 route.get("/user/orderFood", (req, res) => {
     const loginUser = req.session.loginUser;
     if (!loginUser || loginUser.type !== 'normal') {
-        // 必须是member才能下单
         return res.render("login", { loginFirst: true });
     }
     res.render("normalPages/normalCheckout", { loginUser });
 });
+
 route.post("/orderNowFromBasket", async (req, res) => {
-    const loginUser = req.session.loginUser;
-    if (!loginUser || loginUser.type !== 'normal') {
-        return res.status(403).send("无权限下单。");
-    }
     try {
+        const loginUser = req.session.loginUser;
+        if (!loginUser || loginUser.type !== 'normal') {
+            return res.status(403).json({
+                message: "无权限下单。"
+            });
+        }
+
         const basket = JSON.parse(req.body.data);
-        const pickupTime = req.body.pickupTime || "尽快";
+        const pickupTime = req.body.pickupTime || "";
         const specialRequests = req.body.specialRequests || "";
         const paymentType = req.body.paymentType || "online";
 
-        const now = new Date();
-        const dateTimeStr = `${now.getFullYear()}-${(now.getMonth()+1).toString().padStart(2,'0')}-${now.getDate().toString().padStart(2,'0')} `
-                           + `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
-
+        // 检查库存
         for (const item of basket) {
-            // 生成订单
-            await Order.create({
-                dishId: item.id,
-                userId: loginUser._id,
-                user: loginUser,
-                photo: item.image,
-                dname: item.name,
-                time: dateTimeStr,
+            // item.id 为前端传递的 dishId
+            const dishRecord = await Dish.findById(item.id);
+            if (!dishRecord) {
+                return res.status(400).json({
+                    message: "有菜品不存在或已下架。"
+                });
+            }
+            if (dishRecord.dserve < item.quantity) {
+                return res.status(400).json({
+                    message: `菜品【${dishRecord.dname}】库存不足，下单失败。`
+                });
+            }
+        }
+
+        // 扣减库存 & 创建订单
+        for (const item of basket) {
+            const dishRecord = await Dish.findById(item.id);
+
+            // 1) 创建订单
+            const orderData = {
+                dishId: dishRecord.id,   // 注意用id
+                userId: loginUser.id,
+                time: new Date(),        // 下单时间
                 pickupTime,
                 specialRequests,
-                price: item.price,
+                photo: dishRecord.photo,
+                dname: dishRecord.dname,
+                price: dishRecord.dprice,
                 quantity: item.quantity,
                 paymentType,
-                states: "NA" // 未处理
-            });
+                states: "NA"
+            };
+            await Order.create(orderData);
+
+            // 2) 更新库存
+            const newServe = dishRecord.dserve - item.quantity;
+            await Dish.updateOne(dishRecord.id, { dserve: newServe });
         }
-        return res.redirect("/");
+
+        return res.status(200).json({
+            message: "订单创建成功！"
+        });
     } catch (error) {
-        console.error("下单错误:", error);
-        return res.status(500).send("下单失败，请重试。");
+        console.error("下单错误详情:", error);
+        return res.status(500).json({
+            message: "下单失败，请重试。",
+            error: error.message
+        });
     }
 });
 
@@ -210,11 +236,11 @@ route.get("/user/orders", async (req, res) => {
         return res.render("login", { loginFirst: true });
     }
     try {
-        // “未完成”的订单(不包括 Order completed.)
+        // “未完成”的订单
         const data = await Order.find({
-            userId: loginUser._id,
-            states: { $ne: "Order completed." }
-        }).sort({ pickupTime: 1 });
+            userId: loginUser.id,
+            statesNe: "Order completed."
+        }, 'pickupTime', 'ASC');
         res.render("normalPages/normalOrders", {
             loginUser,
             orderFood: data
@@ -228,27 +254,57 @@ route.get("/user/orders", async (req, res) => {
         });
     }
 });
+
+// 取消订单
 route.get("/user/cancelOrder/:id", async (req, res) => {
     const loginUser = req.session.loginUser;
     if (!loginUser || loginUser.type !== 'normal') {
         return res.render("login", { loginFirst: true });
     }
     try {
-        // 简单示例：直接删除该订单（实际可判断pick-up时间与当前时间差）
-        const del = await Order.deleteOne({ _id: req.params.id, userId: loginUser._id });
-        if (del.deletedCount > 0) {
-            // 重新获取剩余未完成订单
+        const order = await Order.findById(req.params.id);
+        if (!order) {
+            return res.status(404).send("订单不存在。");
+        }
+        if (order.userId !== loginUser.id) {
+            return res.status(403).send("无权操作他人订单。");
+        }
+
+        // 判断取餐时间
+        if(order.pickupTime){
+            const pickupTime = new Date(order.pickupTime);
+            const now = new Date();
+            const diff = pickupTime.getTime() - now.getTime();
+            const minutesDiff = Math.floor(diff / 1000 / 60);
+            if(minutesDiff < 30) {
+                // 回到当前订单列表
+                const orderFood = await Order.find({
+                    userId: loginUser.id,
+                    statesNe: "Order completed."
+                }, 'pickupTime', 'ASC');
+                return res.render("normalPages/normalOrders", {
+                    loginUser,
+                    orderFood,
+                    cancelError: "距离取餐时间不足30分钟，无法取消订单。"
+                });
+            }
+        }
+
+        // 允许取消 (删除订单)
+        const delCount = await Order.deleteOne(req.params.id, loginUser.id);
+        if(delCount > 0) {
+            // 重新获取当前未完成订单
             const data = await Order.find({
-                userId: loginUser._id,
-                states: { $ne: "Order completed." }
-            }).sort({ pickupTime: 1 });
-            res.render("normalPages/normalOrders", {
+                userId: loginUser.id,
+                statesNe: "Order completed."
+            }, 'pickupTime', 'ASC');
+            return res.render("normalPages/normalOrders", {
                 loginUser,
                 orderFood: data,
                 cancelOrder: true
             });
         } else {
-            res.status(500).send("无法取消订单。");
+            return res.status(500).send("无法取消订单。");
         }
     } catch (error) {
         console.error("取消订单错误:", error);
@@ -256,31 +312,31 @@ route.get("/user/cancelOrder/:id", async (req, res) => {
     }
 });
 
-/**
- * 普通用户查看历史订单 & 显示/提交评价
- */
+// 历史订单
 route.get("/user/history", async (req, res) => {
     const loginUser = req.session.loginUser;
     if (!loginUser || loginUser.type !== 'normal') {
         return res.render("login", { loginFirst: true });
     }
     try {
-        // 当前用户的所有订单（含已完成/未完成），默认按pickupTime倒序
-        const data = await Order.find({ userId: loginUser._id }).sort({ pickupTime: -1 });
+        // 查所有订单(无分页, 按pickupTime倒序)
+        const data = await Order.find({ userId: loginUser.id }, 'pickupTime', 'DESC');
 
-        // 找出这些订单对应的feedback
-        const orderIds = data.map(o => o._id.toString());
-        const feedbacks = await Feedback.find({ orderId: { $in: orderIds } });
+        // 拿到所有订单ID
+        const orderIds = data.map(o => o.id);
 
-        // 构建一个映射 { orderId: feedbackObj }
+        // 找所有 feedback
+        let feedbackList = [];
+        if(orderIds.length){
+            const cond = `orderId IN (${orderIds.join(',')})`;
+            feedbackList = await Feedback.findByCondition(cond, []);
+        }
         const feedbackMap = {};
-        feedbacks.forEach(f => {
-            feedbackMap[f.orderId] = f;
+        feedbackList.forEach(fb => {
+            feedbackMap[fb.orderId] = fb;
         });
-
-        // 把 feedback 附到对应的订单对象上
         data.forEach(o => {
-            o._doc.feedback = feedbackMap[o._id.toString()] || null;
+            o.feedback = feedbackMap[o.id] || null;
         });
 
         res.render("normalPages/normalHistory", {
@@ -302,16 +358,17 @@ route.get("/user/history", async (req, res) => {
  */
 route.post("/user/addFavourite/:dishId", async (req, res) => {
     const loginUser = req.session.loginUser;
-    // 只有 normal 用户才允许真的收藏；其余弹窗警告（可在前端处理，也可后端判断）
     if (!loginUser || loginUser.type !== 'normal') {
         return res.status(403).send("只有普通用户才能收藏。");
     }
     try {
-        const found = await Favourite.findOne({ userId: loginUser._id, dishId: req.params.dishId });
+        const found = await Favourite.findOne(loginUser.id, req.params.dishId);
         if (!found) {
-            await Favourite.create({ userId: loginUser._id, dishId: req.params.dishId });
+            await Favourite.create({
+                userId: loginUser.id,
+                dishId: req.params.dishId
+            });
         }
-        // 改成返回JSON，而不是res.redirect
         return res.json({
             success: true,
             message: "收藏成功"
@@ -331,11 +388,13 @@ route.get("/user/favourites", async (req, res) => {
         return res.render("login", { loginFirst: true });
     }
     try {
-        const favs = await Favourite.find({ userId: loginUser._id });
-        let dishIds = favs.map(f => f.dishId);
+        const favs = await Favourite.findByUser(loginUser.id);
+        const dishIds = favs.map(f => f.dishId);
         let favDishes = [];
-        if (dishIds.length) {
-            favDishes = await Dish.find({ _id: { $in: dishIds } });
+        if(dishIds.length){
+            // 简单查出全部 dish，再筛选
+            const allDishes = await Dish.find({});
+            favDishes = allDishes.filter(d => dishIds.includes(d.id));
         }
         res.render("normalPages/normalFavourites", {
             loginUser,
@@ -352,7 +411,7 @@ route.get("/user/favourites", async (req, res) => {
 });
 
 /**
- * member - 对已完成订单做评价
+ * member - 评价
  */
 route.post("/user/feedback", async (req, res) => {
     const loginUser = req.session.loginUser;
@@ -361,12 +420,19 @@ route.post("/user/feedback", async (req, res) => {
     }
     try {
         const { orderId, rating, comment } = req.body;
-        await Feedback.create({
-            orderId,
-            userId: loginUser._id,
-            rating,
-            comment
-        });
+        const existing = await Feedback.findOne(orderId, loginUser.id);
+        if(existing) {
+            // update
+            await Feedback.updateFeedback(orderId, loginUser.id, rating, comment);
+        } else {
+            // create
+            await Feedback.create({
+                orderId: parseInt(orderId,10),
+                userId: loginUser.id,
+                rating: parseInt(rating,10),
+                comment
+            });
+        }
         res.redirect("/user/history");
     } catch (error) {
         console.error("评价错误:", error);
@@ -375,22 +441,37 @@ route.post("/user/feedback", async (req, res) => {
 });
 
 /**
- * member - 编辑个人资料
+ * 所有角色都能编辑自己的个人资料
  */
 route.get("/user/editProfile", (req, res) => {
-    if (!req.session.loginUser || req.session.loginUser.type !== 'normal') {
+    if (!req.session.loginUser) {
         return res.render("login", { loginFirst: true });
     }
-    res.render("normalPages/normalEditProfile", {
-        loginUser: req.session.loginUser
-    });
+    // 无论什么角色，都可用不同模板
+    if (req.session.loginUser.type === 'normal') {
+        return res.render("normalPages/normalEditProfile", {
+            loginUser: req.session.loginUser
+        });
+    } else if (req.session.loginUser.type === 'admin') {
+        // 可以跳到管理员用户列表，这里看需求
+        return res.redirect("/admin/users");
+    } else {
+        // employee
+        return res.render("employeePages/employeeEditProfile", {
+            loginUser: req.session.loginUser
+        });
+    }
 });
+
 route.post("/user/saveProfile", async (req, res) => {
-    if (!req.session.loginUser || req.session.loginUser.type !== 'normal') {
+    if (!req.session.loginUser) {
         return res.render("login", { loginFirst: true });
     }
     const loginUser = req.session.loginUser;
     try {
+        let updateData = {...req.body};
+
+        // 如果有上传新头像
         if (req.files && req.files.photo) {
             const { photo } = req.files;
             const imageName = `${Date.now()}_${photo.name}`;
@@ -401,19 +482,19 @@ route.post("/user/saveProfile", async (req, res) => {
             const imagePath = path.join(uploadDir, imageName);
             await photo.mv(imagePath);
 
-            // 若有旧头像则尝试删除
-            if (loginUser.photo) {
-                const oldPath = path.join(uploadDir, loginUser.photo);
-                if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
-            }
-            req.body.photo = imageName;
+            updateData.photo = imageName;
+        } else {
+            // 如果没上传，就不要覆盖
+            delete updateData.photo;
         }
-        // 更新
-        await User.updateOne({ _id: loginUser._id }, { $set: req.body });
-        // 更新session
-        const newUser = await User.findById(loginUser._id);
+
+        await User.updateOne(loginUser.id, updateData);
+
+        // 重新查一下最新用户信息存到 session
+        const newUser = await User.findById(loginUser.id);
         req.session.loginUser = newUser;
-        res.redirect("/dashboard");
+
+        return res.redirect("/dashboard");
     } catch (err) {
         console.error("更新个人资料错误:", err);
         res.status(500).send("更新失败，请稍后再试。");
@@ -430,6 +511,7 @@ route.get("/admin/addDish", (req, res) => {
     }
     res.render("adminPages/adminAddNewDish", { loginUser });
 });
+
 route.post("/saveDish", async (req, res) => {
     const loginUser = req.session.loginUser;
     if (!loginUser || loginUser.type !== 'admin') {
@@ -461,8 +543,7 @@ route.post("/saveDish", async (req, res) => {
                 save: true,
                 loginUser
             });
-        }
-        else {
+        } else {
             return res.render("adminPages/adminAddNewDish", {
                 notsave: true,
                 loginUser
@@ -476,6 +557,7 @@ route.post("/saveDish", async (req, res) => {
         });
     }
 });
+
 route.get("/admin/dishMenus/:page", async (req, res) => {
     const loginUser = req.session.loginUser;
     if (!loginUser || loginUser.type !== 'admin') {
@@ -484,9 +566,11 @@ route.get("/admin/dishMenus/:page", async (req, res) => {
     let page = parseInt(req.params.page) || 1;
     const total = 6;
     const skip = (page - 1) * total;
-    const data = await Dish.find().skip(skip).limit(total);
-    const totalCount = await Dish.countDocuments();
+
+    const data = await Dish.find({}, skip, total);
+    const totalCount = await Dish.countAll();
     const totalPage = Math.ceil(totalCount / total);
+
     res.render("adminPages/adminFoodTable", {
         loginUser,
         foods: data,
@@ -494,6 +578,7 @@ route.get("/admin/dishMenus/:page", async (req, res) => {
         count: totalPage
     });
 });
+
 route.get('/admin/deleteDish/:id', async (req, res) => {
     const loginUser = req.session.loginUser;
     if (!loginUser || loginUser.type !== 'admin') {
@@ -505,13 +590,12 @@ route.get('/admin/deleteDish/:id', async (req, res) => {
             const target = path.join(__dirname, '../../public/dishImages', dishToDel.photo);
             if (fs.existsSync(target)) fs.unlinkSync(target);
         }
-        const delResult = await Dish.deleteOne({ _id: req.params.id });
-        if (delResult.deletedCount > 0) {
-            // 重新渲染列表
+        const delResult = await Dish.deleteOne(req.params.id);
+        if (delResult > 0) {
             let currentPage = 1;
             const total = 6;
-            const foods = await Dish.find().limit(total);
-            const totalCount = await Dish.countDocuments();
+            const foods = await Dish.find({}, 0, total);
+            const totalCount = await Dish.countAll();
             const totalPage = Math.ceil(totalCount / total);
             return res.render("adminPages/adminFoodTable", {
                 loginUser,
@@ -520,8 +604,7 @@ route.get('/admin/deleteDish/:id', async (req, res) => {
                 count: totalPage,
                 delete: true
             });
-        }
-        else {
+        } else {
             return res.status(500).send("删除失败");
         }
     } catch (err) {
@@ -529,6 +612,7 @@ route.get('/admin/deleteDish/:id', async (req, res) => {
         return res.status(500).send("删除时发生错误");
     }
 });
+
 route.get("/admin/editDish/:id/:flag", async (req, res) => {
     const loginUser = req.session.loginUser;
     if (!loginUser || loginUser.type !== 'admin') {
@@ -548,6 +632,7 @@ route.get("/admin/editDish/:id/:flag", async (req, res) => {
         res.status(500).send("服务器错误。");
     }
 });
+
 route.post("/admin/saveEditDish/:id", async (req, res) => {
     const loginUser = req.session.loginUser;
     if (!loginUser || loginUser.type !== 'admin') {
@@ -559,7 +644,7 @@ route.post("/admin/saveEditDish/:id", async (req, res) => {
         if (!oldDish) {
             return res.redirect("/admin/editDish/" + dishId + "/error");
         }
-        // 如果新上传了图片
+        // 如果上传了新图片
         if (req.files && req.files.photo) {
             // 删旧
             const oldPath = path.join(__dirname, '../../public/dishImages', req.body.tempImage);
@@ -569,14 +654,11 @@ route.post("/admin/saveEditDish/:id", async (req, res) => {
             const imgName = Date.now() + "_" + photo.name;
             await photo.mv(path.join(__dirname, '../../public/dishImages', imgName));
             req.body.photo = imgName;
-        }
-        else {
-            // 若无新图片，就不要更新photo
+        } else {
             delete req.body.photo;
         }
 
-        // 更新
-        await Dish.updateOne({ _id: dishId }, { $set: req.body });
+        await Dish.updateOne(dishId, req.body);
         return res.redirect("/admin/editDish/" + dishId + "/success");
     } catch (error) {
         console.error("编辑菜品保存时错误:", error);
@@ -587,7 +669,6 @@ route.post("/admin/saveEditDish/:id", async (req, res) => {
 /**
  * manager(=admin) - 订单管理
  */
-// 示例: routes/admin.js 或 main.js 等
 route.get("/admin/adminOrder/:page", async (req, res) => {
     const loginUser = req.session.loginUser;
     if (!loginUser || loginUser.type !== 'admin') {
@@ -598,54 +679,45 @@ route.get("/admin/adminOrder/:page", async (req, res) => {
     const total = 10;
     const skip = (page - 1) * total;
 
-    // 1) 查找所有订单
-    const orders = await Order.find().sort({ pickupTime: 1 }).skip(skip).limit(total);
-
-    // 2) 收集这些订单的 _id 列表(注意, order._id 是个 ObjectId, 需要转成字符串来对比 feedback.orderId)
-    const orderIds = orders.map(o => o._id.toString());
-
-    // 3) 根据 orderIds 查找 feedbacks
-    const feedbacks = await Feedback.find({ orderId: { $in: orderIds } });
-
-    // 4) 以 orderId 为 key，构建一个 map，快速查询
-    const feedbackMap = {};
-    feedbacks.forEach(f => {
-        feedbackMap[f.orderId] = f;
-    });
-
-    // 5) 把 feedback 合并到每个 order 对象中
-    //    在 mongoose 返回的对象里，可以使用 o._doc 来追加自定义字段
-    orders.forEach(o => {
-        // 如果 feedbackMap 里有，以 o._id.toString() 为 key 的 feedback，就赋给 o._doc.feedback
-        const fid = o._id.toString();
-        if (feedbackMap[fid]) {
-            o._doc.feedback = feedbackMap[fid];
-        } else {
-            o._doc.feedback = null;
-        }
-    });
-
-    // 分页总数
-    const totalCount = await Order.countDocuments();
+    const orders = await Order.find({}, 'pickupTime', 'ASC', skip, total);
+    const totalCount = await Order.count({});
     const totalPage = Math.ceil(totalCount / total);
 
-    // 6) 渲染模板
+    // 取 feedback
+    const allFeedbacks = await Feedback.findAll();
+    const fbMap = {};
+    allFeedbacks.forEach(f => {
+        fbMap[f.orderId] = f;
+    });
+
+    // 取 user
+    const allUsers = await User.findAll();
+    const userMap = {};
+    allUsers.forEach(u => {
+        userMap[u.id] = u;
+    });
+
+    orders.forEach(o => {
+        o.feedback = fbMap[o.id] || null;
+        o.user = userMap[o.userId] || {};
+    });
+
     res.render("adminPages/adminOrders", {
-        loginuser: loginUser,
-        orders,             // now orders[i]._doc.feedback 里有feedback对象
+        loginUser,
+        orders,
         currentPage: page,
         count: totalPage
     });
 });
 
-// 更新订单状态
+// 更新状态
 route.get("/admin/cooking/:id", async (req, res) => {
     const loginUser = req.session.loginUser;
     if (!loginUser || loginUser.type !== 'admin') {
         return res.status(403).send("无权限。");
     }
     try {
-        await Order.updateOne({ _id: req.params.id }, { $set: { states: "Cooking" } });
+        await Order.updateOne(req.params.id, { states: "Cooking" });
         res.redirect("/admin/adminOrder/1");
     } catch (error) {
         console.error("更新为Cooking错误:", error);
@@ -658,20 +730,33 @@ route.get("/admin/deliver/:id", async (req, res) => {
         return res.status(403).send("无权限。");
     }
     try {
-        await Order.updateOne({ _id: req.params.id }, { $set: { states: "Out for delivery." } });
+        await Order.updateOne(req.params.id, { states: "Out for delivery." });
+        // 发邮件
+        const order = await Order.findById(req.params.id);
+        if(order){
+            const userInfo = await User.findById(order.userId);
+            if(userInfo && userInfo.email){
+                const subject = "您的订单已准备好取货";
+                const text = `尊敬的${userInfo.name}，您好！
+您的订单【${order.dname}】已经准备好取餐啦！
+请在指定时间内前往餐厅取货。感谢您的支持！`;
+                await sendSimpleEmail(userInfo.email, subject, text);
+            }
+        }
         res.redirect("/admin/adminOrder/1");
     } catch (error) {
         console.error("更新为Out for delivery错误:", error);
         res.status(500).send("更新状态失败");
     }
 });
+
 route.get("/admin/handover/:id", async (req, res) => {
     const loginUser = req.session.loginUser;
     if (!loginUser || loginUser.type !== 'admin') {
         return res.status(403).send("无权限。");
     }
     try {
-        await Order.updateOne({ _id: req.params.id }, { $set: { states: "Order completed." } });
+        await Order.updateOne(req.params.id, { states: "Order completed." });
         res.redirect("/admin/adminOrder/1");
     } catch (error) {
         console.error("更新为完成错误:", error);
@@ -680,7 +765,587 @@ route.get("/admin/handover/:id", async (req, res) => {
 });
 
 /**
- * staff(=employee) - 订单管理（只显示未完成订单），完成后进“历史订单”
+ * ========== 新增：4种更详细的周报、月报 ========== 
+ */
+function formatDateTime(dt) {
+    let y = dt.getFullYear();
+    let m = String(dt.getMonth()+1).padStart(2,'0');
+    let d = String(dt.getDate()).padStart(2,'0');
+    let hh = String(dt.getHours()).padStart(2,'0');
+    let mm = String(dt.getMinutes()).padStart(2,'0');
+    let ss = String(dt.getSeconds()).padStart(2,'0');
+    return `${y}-${m}-${d} ${hh}:${mm}:${ss}`;
+}
+
+/**
+ * 周报 - 趋势与偏好
+ */
+route.get("/admin/weeklyTrendReport", async (req, res) => {
+    const loginUser = req.session.loginUser;
+    if (!loginUser || loginUser.type !== 'admin') {
+        return res.status(403).send("无权限。");
+    }
+    try {
+        // 过去7天
+        const today = new Date();
+        const start = new Date();
+        start.setDate(today.getDate() - 7);
+
+        const pickupTimeStr = formatDateTime(start);
+        // 1) 订单趋势
+        const [trendRows] = await pool.query(
+            `SELECT DATE_FORMAT(pickupTime, '%Y-%m-%d') as _id,
+                    COUNT(*) as orderCount
+             FROM orders
+             WHERE pickupTime >= ?
+             GROUP BY _id
+             ORDER BY _id ASC`,
+            [pickupTimeStr]
+        );
+        const trendData = trendRows.map(r => ({
+            _id: r._id,
+            orderCount: r.orderCount
+        }));
+
+        // 2) 客户偏好(销量前5)
+        const [prefRows] = await pool.query(
+            `SELECT dname as _id, SUM(quantity) as totalQty
+             FROM orders
+             WHERE pickupTime >= ?
+             GROUP BY dname
+             ORDER BY totalQty DESC
+             LIMIT 5`,
+            [pickupTimeStr]
+        );
+        const preferenceData = prefRows.map(r => ({
+            _id: r._id || '未命名菜品',
+            totalQty: r.totalQty
+        }));
+
+        res.render("adminPages/adminWeeklyTrendReport", {
+            loginUser,
+            trendData,
+            preferenceData
+        });
+    } catch (error) {
+        console.error("周报 - 趋势与偏好 出错:", error);
+        res.status(500).send("生成周报趋势与偏好报告时出错");
+    }
+});
+
+/**
+ * 周报 - 销售
+ */
+route.get("/admin/weeklySalesReport", async (req, res) => {
+    const loginUser = req.session.loginUser;
+    if (!loginUser || loginUser.type !== 'admin') {
+        return res.status(403).send("无权限。");
+    }
+    try {
+        // 过去7天
+        const today = new Date();
+        const start = new Date();
+        start.setDate(today.getDate() - 7);
+
+        const pickupTimeStr = formatDateTime(start);
+        const [rows] = await pool.query(`
+            SELECT *
+            FROM orders
+            WHERE pickupTime >= ?
+        `, [pickupTimeStr]);
+
+        const orders = rows;
+        const totalOrders = orders.length;
+        let totalSales = 0;
+        orders.forEach(o => {
+            totalSales += (o.price * o.quantity);
+        });
+        const avgSales = totalOrders > 0 ? (totalSales / totalOrders).toFixed(2) : 0;
+
+        res.render("adminPages/adminWeeklySalesReport", {
+            loginUser,
+            totalOrders,
+            totalSales,
+            avgSales
+        });
+    } catch (error) {
+        console.error("周报 - 销售 出错:", error);
+        res.status(500).send("生成周报销售报告时出错");
+    }
+});
+
+/**
+ * 月报 - 趋势与偏好
+ */
+route.get("/admin/monthlyTrendReport", async (req, res) => {
+    const loginUser = req.session.loginUser;
+    if (!loginUser || loginUser.type !== 'admin') {
+        return res.status(403).send("无权限。");
+    }
+    try {
+        // 过去30天
+        const today = new Date();
+        const start = new Date();
+        start.setDate(today.getDate() - 30);
+
+        const pickupTimeStr = formatDateTime(start);
+        // 1) 订单趋势
+        const [trendRows] = await pool.query(
+            `SELECT DATE_FORMAT(pickupTime, '%Y-%m-%d') as _id,
+                    COUNT(*) as orderCount
+             FROM orders
+             WHERE pickupTime >= ?
+             GROUP BY _id
+             ORDER BY _id ASC`,
+            [pickupTimeStr]
+        );
+        const trendData = trendRows.map(r => ({
+            _id: r._id,
+            orderCount: r.orderCount
+        }));
+
+        // 2) 客户偏好(销量前5)
+        const [prefRows] = await pool.query(
+            `SELECT dname as _id, SUM(quantity) as totalQty
+             FROM orders
+             WHERE pickupTime >= ?
+             GROUP BY dname
+             ORDER BY totalQty DESC
+             LIMIT 5`,
+            [pickupTimeStr]
+        );
+        const preferenceData = prefRows.map(r => ({
+            _id: r._id || '未命名菜品',
+            totalQty: r.totalQty
+        }));
+
+        res.render("adminPages/adminMonthlyTrendReport", {
+            loginUser,
+            trendData,
+            preferenceData
+        });
+    } catch (error) {
+        console.error("月报 - 趋势与偏好 出错:", error);
+        res.status(500).send("生成月报趋势与偏好报告时出错");
+    }
+});
+
+/**
+ * 月报 - 销售
+ */
+route.get("/admin/monthlySalesReport", async (req, res) => {
+    const loginUser = req.session.loginUser;
+    if (!loginUser || loginUser.type !== 'admin') {
+        return res.status(403).send("无权限。");
+    }
+    try {
+        // 过去30天
+        const today = new Date();
+        const start = new Date();
+        start.setDate(today.getDate() - 30);
+
+        const pickupTimeStr = formatDateTime(start);
+        const [rows] = await pool.query(`
+            SELECT *
+            FROM orders
+            WHERE pickupTime >= ?
+        `, [pickupTimeStr]);
+
+        const orders = rows;
+        const totalOrders = orders.length;
+        let totalSales = 0;
+        orders.forEach(o => {
+            totalSales += (o.price * o.quantity);
+        });
+        const avgSales = totalOrders > 0 ? (totalSales / totalOrders).toFixed(2) : 0;
+
+        res.render("adminPages/adminMonthlySalesReport", {
+            loginUser,
+            totalOrders,
+            totalSales,
+            avgSales
+        });
+    } catch (error) {
+        console.error("月报 - 销售 出错:", error);
+        res.status(500).send("生成月报销售报告时出错");
+    }
+});
+
+/**
+ * 新增：管理员(manager=admin) 可以查看并编辑所有用户
+ */
+route.get("/admin/users", async (req, res) => {
+    const loginUser = req.session.loginUser;
+    if (!loginUser || loginUser.type !== 'admin') {
+        return res.status(403).send("无权限。");
+    }
+    try {
+        const allUsers = await User.findAll();
+        res.render("adminPages/adminUsersList", {
+            loginUser,
+            users: allUsers,
+            editSuccess: req.query.editSuccess
+        });
+    } catch (err) {
+        console.error("获取用户列表失败:", err);
+        res.status(500).send("获取用户列表失败");
+    }
+});
+route.get("/admin/editUser/:id", async (req, res) => {
+    const loginUser = req.session.loginUser;
+    if (!loginUser || loginUser.type !== 'admin') {
+        return res.status(403).send("无权限。");
+    }
+    try {
+        const userId = parseInt(req.params.id,10);
+        const targetUser = await User.findById(userId);
+        if (!targetUser) {
+            return res.status(404).send("用户不存在");
+        }
+        
+        res.render("adminPages/adminEditUser", {
+            loginUser,
+            targetUser
+        });
+    } catch (err) {
+        console.error("管理员编辑用户出错:", err);
+        res.status(500).send("服务器错误");
+    }
+});
+route.post("/admin/saveUser/:id", async (req, res) => {
+    const loginUser = req.session.loginUser;
+    if (!loginUser || loginUser.type !== 'admin') {
+        return res.status(403).send("无权限。");
+    }
+    try {
+        const userId = parseInt(req.params.id,10);
+        const oldUser = await User.findById(userId);
+        if (!oldUser) {
+            return res.status(404).send("找不到此用户");
+        }
+
+        let updateData = {...req.body};
+        if (req.files && req.files.photo) {
+            const { photo } = req.files;
+            const imageName = `${Date.now()}_${photo.name}`;
+            const uploadDir = path.join(__dirname, '../../public/userImages');
+            if (!fs.existsSync(uploadDir)) {
+                fs.mkdirSync(uploadDir, { recursive: true });
+            }
+            const imagePath = path.join(uploadDir, imageName);
+            await photo.mv(imagePath);
+
+            updateData.photo = imageName;
+        } else {
+            delete updateData.photo;
+        }
+
+        await User.updateOne(userId, updateData);
+        res.redirect("/admin/users?editSuccess=1");
+    } catch (err) {
+        console.error("管理员保存用户资料出错:", err);
+        res.status(500).send("更新失败，请稍后再试。");
+    }
+});
+
+/**
+ * 简易报告（示例）
+ */
+route.get("/admin/reports", async (req, res) => {
+    const loginUser = req.session.loginUser;
+    if (!loginUser || loginUser.type !== 'admin') {
+        return res.status(403).send("无权限。");
+    }
+    try {
+        const period = req.query.period || 'week'; // 默认周报
+        let startDate;
+        if (period === 'month') {
+            startDate = new Date();
+            startDate.setDate(startDate.getDate() - 30);
+        } else {
+            // week
+            startDate = new Date();
+            startDate.setDate(startDate.getDate() - 7);
+        }
+
+        // 这里用 order.js 里 findByTimeRange 或直接 pool.query
+        const ordersInPeriod = await Order.findByTimeRange(startDate);
+
+        let totalSales = 0;
+        let dishCountMap = {};
+        ordersInPeriod.forEach(o => {
+            totalSales += (o.price * o.quantity);
+        });
+        const totalOrders = ordersInPeriod.length;
+
+        ordersInPeriod.forEach(o => {
+            const key = o.dname || "未命名菜品";
+            if (!dishCountMap[key]) {
+                dishCountMap[key] = 0;
+            }
+            dishCountMap[key] += o.quantity;
+        });
+
+        let popularDish = "";
+        let maxCount = 0;
+        for (let dishName in dishCountMap) {
+            if (dishCountMap[dishName] > maxCount) {
+                maxCount = dishCountMap[dishName];
+                popularDish = dishName;
+            }
+        }
+
+        const reportData = {
+            period,
+            totalOrders,
+            totalSales,
+            popularDish,
+            popularDishQuantity: maxCount
+        };
+        
+        res.render("adminPages/adminReports", {
+            loginUser,
+            reportData
+        });
+    } catch (err) {
+        console.error("生成报告时出错:", err);
+        res.status(500).send("生成报告失败");
+    }
+});
+
+/**
+ * 反馈相关
+ */
+route.get("/feedbacks", async (req, res) => {
+    const loginUser = req.session.loginUser;
+    if(!loginUser){
+        return res.render("login", { loginFirst: true });
+    }
+
+    const dishId = req.query.dishId || null;
+    const onlyMine = req.query.onlyMine === '1';
+
+    try {
+        let fbList = [];
+        if(loginUser.type === 'admin') {
+            // 管理员可看所有，如 dishId 存在则过滤
+            if(dishId){
+                const allOrders = await Order.find({});
+                const relatedOrderIds = allOrders
+                  .filter(o=>o.dishId == dishId)
+                  .map(o=>o.id);
+                if(!relatedOrderIds.length){
+                    fbList = [];
+                } else {
+                    const cond = `orderId IN (${relatedOrderIds.join(',')})`;
+                    fbList = await Feedback.findByCondition(cond, []);
+                }
+            } else {
+                fbList = await Feedback.findAll();
+            }
+        } else if(loginUser.type === 'normal'){
+            // 普通用户可看(onlyMine=1)只看自己
+            const allOrders = await Order.find({});
+            let relevantOrderIds = allOrders.map(o=>o.id);
+            if(dishId){
+                relevantOrderIds = allOrders.filter(o=>o.dishId == dishId).map(o=>o.id);
+            }
+
+            if(onlyMine){
+                if(relevantOrderIds.length){
+                    const cond = `orderId IN (${relevantOrderIds.join(',')}) AND userId=?`;
+                    fbList = await Feedback.findByCondition(cond, [loginUser.id]);
+                } else {
+                    fbList = [];
+                }
+            } else {
+                // 不仅限自己 => 视需求，这里写成查看全部
+                if(dishId){
+                    if(!relevantOrderIds.length) fbList=[];
+                    else {
+                        const cond = `orderId IN (${relevantOrderIds.join(',')})`;
+                        fbList = await Feedback.findByCondition(cond, []);
+                    }
+                } else {
+                    fbList = await Feedback.findAll();
+                }
+            }
+        } else {
+            return res.send("只有管理员或普通用户可查看反馈。");
+        }
+
+        // 为了展示 userName / dname
+        const userIds = new Set();
+        const orderIds = new Set();
+        fbList.forEach(f=>{
+            userIds.add(f.userId);
+            orderIds.add(f.orderId);
+        });
+        const allUsers = await User.findAll();
+        const userMap = {};
+        allUsers.forEach(u=>{ userMap[u.id] = u; });
+
+        const allOrders = await Order.find({});
+        const orderMap = {};
+        allOrders.forEach(o=>{ orderMap[o.id] = o; });
+
+        fbList.forEach(f=>{
+            const u = userMap[f.userId] || {};
+            const o = orderMap[f.orderId] || {};
+            f.userName = u.name || "未知用户";
+            f.dname = o.dname || "未知菜品";
+            f.orderTime = o.time || "";
+        });
+
+        res.render("feedbacks", {
+            loginUser,
+            feedbackList: fbList,
+            dishId,
+            onlyMine
+        });
+    } catch(err){
+        console.error("获取反馈列表出错:", err);
+        res.status(500).send("获取反馈失败，请稍后再试。");
+    }
+});
+
+route.post("/feedbacks/reply", async (req, res)=>{
+    const loginUser = req.session.loginUser;
+    if(!loginUser || loginUser.type!=='admin'){
+        return res.status(403).json({ success:false, message: "只有管理员可回复" });
+    }
+    try {
+        const { feedbackId, replyText } = req.body;
+        const fb = await Feedback.findById(feedbackId);
+        if(!fb){
+            return res.status(404).json({ success:false, message:"找不到该反馈" });
+        }
+        await Feedback.saveAdminReply(feedbackId, replyText);
+        return res.json({ success:true, message:"回复成功" });
+    } catch(err){
+        console.error("管理员回复反馈出错:", err);
+        return res.status(500).json({ success:false, message:"回复失败" });
+    }
+});
+
+route.post("/feedbacks/markRead", async (req, res)=>{
+    const loginUser = req.session.loginUser;
+    if(!loginUser || loginUser.type!=='normal'){
+        return res.status(403).json({ success:false, message: "只有普通用户可标记为已读" });
+    }
+    try {
+        const { feedbackId } = req.body;
+        const fb = await Feedback.findById(feedbackId);
+        console.log(fb);
+        if(!fb){
+            return res.status(404).json({ success:false, message:"找不到该反馈" });
+        }
+        if(fb.userId !==  parseInt(loginUser.id)){
+            return res.status(403).json({ success:false, message:"无权标记他人的反馈" });
+        }
+        await Feedback.markRead(feedbackId);
+        return res.json({ success:true, message:"已标记为已读" });
+    } catch(err){
+        console.error("标记已读出错:", err);
+        return res.status(500).json({ success:false, message:"标记失败" });
+    }
+});
+
+/**
+ * 新增：手动发送“周报”或“月报”的按钮
+ */
+route.get("/admin/sendWeeklyNow", async (req, res) => {
+    const loginUser = req.session.loginUser;
+    if(!loginUser || loginUser.type!=='admin'){
+        return res.status(403).send("无权限。");
+    }
+    try {
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(oneWeekAgo.getDate()-7);
+        const recentOrders = await Order.findByTimeRange(oneWeekAgo);
+        let totalSales = 0;
+        let totalOrders = recentOrders.length;
+        let dishCountMap = {};
+        recentOrders.forEach(order=>{
+            totalSales += (order.price*order.quantity);
+            const key = order.dname || "未命名菜品";
+            if(!dishCountMap[key]) dishCountMap[key]=0;
+            dishCountMap[key]+=order.quantity;
+        });
+        let popularDish = "";
+        let maxCount = 0;
+        for(let k in dishCountMap){
+            if(dishCountMap[k]>maxCount){
+                maxCount = dishCountMap[k];
+                popularDish = k;
+            }
+        }
+        const reportText=`
+【手动发送 - 周报】
+- 订单总数：${totalOrders} 单
+- 总销售额：￥${totalSales.toFixed(2)}
+- 最畅销菜品：${popularDish} (销量 ${maxCount})
+`;
+        const admins=await User.findByType('admin');
+        for(let ad of admins){
+            if(ad.email){
+                await sendSimpleEmail(ad.email, "【手动周报】餐厅周度总结", reportText);
+            }
+        }
+        res.redirect("/dashboard");
+    } catch(e){
+        console.error(e);
+        res.status(500).send("发送失败，请稍后再试。");
+    }
+});
+
+route.get("/admin/sendMonthlyNow", async (req, res) => {
+    const loginUser = req.session.loginUser;
+    if(!loginUser || loginUser.type!=='admin'){
+        return res.status(403).send("无权限。");
+    }
+    try {
+        const startDate=new Date();
+        startDate.setDate(startDate.getDate()-30);
+        const ordersInPeriod=await Order.findByTimeRange(startDate);
+        let totalSales=0;
+        let totalOrders=ordersInPeriod.length;
+        let dishCountMap={};
+        ordersInPeriod.forEach(o=>{
+            totalSales+=(o.price*o.quantity);
+            const key=o.dname||"未命名菜品";
+            if(!dishCountMap[key]) dishCountMap[key]=0;
+            dishCountMap[key]+=o.quantity;
+        });
+        let popularDish="";
+        let maxCount=0;
+        for(let dk in dishCountMap){
+            if(dishCountMap[dk]>maxCount){
+                maxCount=dishCountMap[dk];
+                popularDish=dk;
+            }
+        }
+        const reportText=`
+【手动发送 - 月报】
+- 订单总数：${totalOrders} 单
+- 总销售额：￥${totalSales.toFixed(2)}
+- 最畅销菜品：${popularDish} (销量 ${maxCount})
+`;
+        const admins=await User.findByType('admin');
+        for(let ad of admins){
+            if(ad.email){
+                await sendSimpleEmail(ad.email, "【手动月报】餐厅月度总结", reportText);
+            }
+        }
+        res.redirect("/dashboard");
+    } catch(e){
+        console.error(e);
+        res.status(500).send("发送失败，请稍后再试。");
+    }
+});
+
+/**
+ * staff(=employee) - 订单、历史、库存管理
  */
 route.get("/employee/dashboard", (req, res) => {
     const loginUser = req.session.loginUser;
@@ -689,29 +1354,54 @@ route.get("/employee/dashboard", (req, res) => {
     }
     res.render("employeePages/employeeDashboard", { loginUser });
 });
+
+// 员工查看当前(未完成)订单
 route.get("/employee/orders/:page", async (req, res) => {
     const loginUser = req.session.loginUser;
     if (!loginUser || loginUser.type !== 'employee') {
         return res.status(403).send("无权限。");
     }
     let page = parseInt(req.params.page) || 1;
-    const total = 10;
-    const skip = (page - 1) * total;
-    // 只查非 completed 的订单
-    const data = await Order.find({ states: { $ne: "Order completed." } })
-        .sort({ pickupTime: 1 })
-        .skip(skip)
-        .limit(total);
-    const totalCount = await Order.countDocuments({ states: { $ne: "Order completed." } });
-    const totalPage = Math.ceil(totalCount / total);
+    const limit = 10;
+    const skip = (page - 1) * limit;
+
+    // 查 states != 'Order completed.'
+    const orders = await Order.find({ statesNe: "Order completed." }, 'pickupTime', 'ASC', skip, limit);
+    const totalCount = await Order.count({ statesNe: "Order completed." });
+
+    // 附加 feedback
+    const orderIds = orders.map(o => o.id);
+    let feedbackList = [];
+    if(orderIds.length){
+        const cond = `orderId IN (${orderIds.join(',')})`;
+        feedbackList = await Feedback.findByCondition(cond, []);
+    }
+    const fbMap = {};
+    feedbackList.forEach(f => {
+        fbMap[f.orderId] = f;
+    });
+
+    // 附加 user
+    const allUsers = await User.findAll();
+    const userMap = {};
+    allUsers.forEach(u => {
+        userMap[u.id] = u;
+    });
+
+    orders.forEach(o => {
+        o.feedback = fbMap[o.id] || null;
+        o.user = userMap[o.userId] || {};
+    });
+
     res.render("employeePages/employeeOrders", {
         loginUser,
-        orders: data,
+        orders,
         currentPage: page,
-        count: totalPage
+        count: Math.ceil(totalCount / limit)
     });
 });
-// staff更新订单状态
+
+// 员工更新订单状态
 route.post("/employee/updateOrderStatus", async (req, res) => {
     const loginUser = req.session.loginUser;
     if (!loginUser || loginUser.type !== 'employee') {
@@ -719,7 +1409,6 @@ route.post("/employee/updateOrderStatus", async (req, res) => {
     }
     try {
         const { orderId, status } = req.body;
-        // 统一映射： 'in progress' => 'Cooking'， 'completed' => 'Order completed.'
         let newStatus;
         if (status.toLowerCase() === "in progress") {
             newStatus = "Cooking";
@@ -728,15 +1417,39 @@ route.post("/employee/updateOrderStatus", async (req, res) => {
         } else {
             return res.status(400).json({ message: "状态无效。" });
         }
-        await Order.updateOne({ _id: orderId }, { $set: { states: newStatus } });
+
+        // 更新数据库
+        await Order.updateOne(orderId, { states: newStatus });
+
+        // 如果完成 => 发送取餐邮件
+        if (newStatus === "Order completed.") {
+            const order = await Order.findById(orderId);
+            if(order){
+                // 再查用户
+                const userData = await User.findById(order.userId);
+                if(userData && userData.email){
+                    const subject = "您的订单已准备好取货";
+                    const text = `尊敬的${userData.name}，您好！
+您的订单【${order.dname}】已经准备好取餐啦！
+请在指定时间内前往餐厅取货。感谢您的支持！`;
+                    try {
+                        await sendSimpleEmail(userData.email, subject, text);
+                    } catch(err){
+                        console.error("发送取餐通知邮件失败:", err);
+                        // 不让它阻止主流程，可根据需求决定
+                    }
+                }
+            }
+        }
+
         return res.json({ message: "订单状态更新成功。" });
     } catch (error) {
         console.error("员工更新订单状态错误:", error);
         return res.status(500).json({ message: "更新订单状态失败。" });
     }
 });
-// staff查看历史订单(只看已完成)
 
+// 员工查看历史订单
 route.get("/employee/history/:page", async (req, res) => {
     const loginUser = req.session.loginUser;
     if (!loginUser || loginUser.type !== 'employee') {
@@ -744,55 +1457,61 @@ route.get("/employee/history/:page", async (req, res) => {
     }
 
     let page = parseInt(req.params.page) || 1;
-    const total = 10;
-    const skip = (page - 1) * total;
+    const limit = 10;
+    const skip = (page - 1) * limit;
 
-    const orders = await Order.find({ states: "Order completed." })
-                    .sort({ pickupTime: -1 })
-                    .skip(skip)
-                    .limit(total);
+    // states = 'Order completed.'
+    const orders = await Order.find({ states: "Order completed." }, 'pickupTime', 'DESC', skip, limit);
+    const totalCount = await Order.count({ states: "Order completed." });
 
-    const orderIds = orders.map(o => o._id.toString());
-    const feedbacks = await Feedback.find({ orderId: { $in: orderIds } });
+    // 查 feedback
+    const orderIds = orders.map(o => o.id);
+    let feedbackList = [];
+    if(orderIds.length){
+        const cond = `orderId IN (${orderIds.join(',')})`;
+        feedbackList = await Feedback.findByCondition(cond, []);
+    }
+    const fbMap = {};
+    feedbackList.forEach(f => {
+        fbMap[f.orderId] = f;
+    });
 
-    const feedbackMap = {};
-    feedbacks.forEach(f => {
-        feedbackMap[f.orderId] = f;
+    // 用户
+    const allUsers = await User.findAll();
+    const userMap = {};
+    allUsers.forEach(u => {
+        userMap[u.id] = u;
     });
 
     orders.forEach(o => {
-        o._doc.feedback = feedbackMap[o._id.toString()] || null;
+        o.feedback = fbMap[o.id] || null;
+        o.user = userMap[o.userId] || {};
     });
-
-    const totalCount = await Order.countDocuments({ states: "Order completed." });
-    const totalPage = Math.ceil(totalCount / total);
 
     res.render("employeePages/employeeHistory", {
         loginUser,
         history: orders,
         currentPage: page,
-        count: totalPage
+        count: Math.ceil(totalCount / limit)
     });
 });
 
-
-/**
- * staff(=employee) - 库存管理
- *   1) 标记缺货 => dserve=0
- *   2) 补货 => dserve=具体数字
- */
+// 员工库存管理
 route.get("/employee/markOutOfStock", async (req, res) => {
     const loginUser = req.session.loginUser;
     if (!loginUser || loginUser.type !== 'employee') {
         return res.status(403).send("无权限。");
     }
-    // 简易分页省略，这里一次查全部
-    const dishes = await Dish.find().sort({ dname: 1 });
+    const allDishes = await Dish.find({}, 0, 9999999);
+    // 按 dname 排序
+    allDishes.sort((a,b)=> (a.dname||"").localeCompare(b.dname||""));
+
     res.render("employeePages/employeeManageInventory", {
         loginUser,
-        dishes
+        dishes: allDishes
     });
 });
+
 route.post("/employee/markOutOfStock", async (req, res) => {
     const loginUser = req.session.loginUser;
     if (!loginUser || loginUser.type !== 'employee') {
@@ -800,15 +1519,31 @@ route.post("/employee/markOutOfStock", async (req, res) => {
     }
     try {
         const { dishId } = req.body;
-        await Dish.updateOne({ _id: dishId }, { $set: { dserve: 0 } });
-        res.json({ message: "该菜品已标记为缺货。" });
+        const dish = await Dish.findById(dishId);
+        if (!dish) {
+            return res.status(404).json({ message: "未找到该菜品。" });
+        }
+
+        // 标记为0
+        await Dish.updateOne(dishId, { dserve: 0 });
+
+        // 给所有 employee + admin 发邮件（可直接写 pool.query 或循环两次）
+        const [rows] = await pool.query("SELECT * FROM users WHERE type IN ('employee','admin')");
+        const subject = "【缺货警告】有菜品库存为0";
+        const text = `警告：菜品【${dish.dname}】已缺货（库存=0）。请及时处理或补货！`;
+        for (let u of rows) {
+            if (u.email) {
+                await sendSimpleEmail(u.email, subject, text);
+            }
+        }
+
+        res.json({ message: "该菜品已标记为缺货，并已发送邮件通知所有员工和管理员。" });
     } catch (err) {
         console.error("标记缺货出错:", err);
         res.status(500).json({ message: "标记缺货失败。" });
     }
 });
 
-// 新增“补货”接口
 route.post("/employee/restock", async (req, res) => {
     const loginUser = req.session.loginUser;
     if (!loginUser || loginUser.type !== 'employee') {
@@ -820,12 +1555,25 @@ route.post("/employee/restock", async (req, res) => {
         if (isNaN(qty) || qty < 1) {
             return res.status(400).json({ message: "补货数量无效。" });
         }
-        await Dish.updateOne({ _id: dishId }, { $set: { dserve: qty } });
+        await Dish.updateOne(dishId, { dserve: qty });
         res.json({ message: "该菜品已成功补货为 " + qty + " 份。" });
     } catch (err) {
         console.error("补货错误:", err);
         res.status(500).json({ message: "补货失败。" });
     }
+});
+
+/**
+ * ========== 员工编辑个人资料单独写在这里（也可复用 /user/editProfile） ==========
+ */
+route.get("/employee/editProfile", (req, res) => {
+    const loginUser = req.session.loginUser;
+    if (!loginUser || loginUser.type !== 'employee') {
+        return res.render("login", { loginFirst: true });
+    }
+    res.render("employeePages/employeeEditProfile", {
+        loginUser
+    });
 });
 
 module.exports = route;

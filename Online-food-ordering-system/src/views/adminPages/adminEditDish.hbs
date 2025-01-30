@@ -2,8 +2,6 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>编辑菜品 - 管理员</title>
 </head>
 
@@ -19,7 +17,7 @@
                 <div class="col-md-9">
                     <div class="card m-3 p-3">
                         <h4 class="text-center">编辑菜品</h4>
-                        <form action="/admin/saveEditDish/{{food._id}}" method="post" enctype="multipart/form-data" class="p-3 shadow">
+                        <form action="/admin/saveEditDish/{{food.id}}" method="post" enctype="multipart/form-data" class="p-3 shadow">
                             <div class="row">
                                 <div class="col-md-4">
                                     <img src="/static/dishImages/{{food.photo}}" class="img-fluid py-3" alt="菜品图">

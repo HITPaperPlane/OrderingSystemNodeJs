@@ -43,7 +43,6 @@ handlebars.registerHelper('discount', function (price, discount, block) {
     return discountPrice;
 });
 handlebars.registerHelper("ifStates", function (states, id, block) {
-    // 保留给admin示例使用
     if (states === "NA") {
         return '<td><a href="/admin/cooking/' + id + '" class="btn states-btn btn-outline-success btn-sm">烹饪中</a></td>';
     } else if (states === "Cooking") {

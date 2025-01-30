@@ -6,7 +6,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 </head>
 <body>
-  <!-- 导航栏 -->
   {{> navbar loginUser=loginUser}}
 
   <section class="container-fluid">
@@ -35,41 +34,40 @@
         {{#each foods}}
         <div class="col-md-4 my-5">
           <div class="card shadow-sm">
-            <!-- 菜品图片 -->
             <img
               style="height:210px"
               src="/static/dishImages/{{this.photo}}"
               class="img-fluid mb-2"
               alt="菜品图片"
             />
-
-            <!-- 菜品名称 -->
             <h4 class="p-2">{{this.dname}}</h4>
-
-            <!-- 烹饪时间 / 份数 -->
             <p class="text-color px-2">
               烹饪时间：{{this.dtime}} 分钟 | 可供应份数：{{this.dserve}}
             </p>
-
-            <!-- 价格 + 折扣 -->
             <h2 class="primary-color mb-3 px-2">
               ￥{{#discount this.dprice this.ddiscount}}{{/discount}}
               <del class="text-muted">￥{{this.dprice}}</del>
             </h2>
             <p class="px-2">{{this.discription}}</p>
 
-            <!-- 加入购物车 + 收藏按钮 -->
             <div class="px-2 pb-2">
-              <button
-                onclick="addFoodToBasket('{{this._id}}','{{this.dname}}','{{this.dprice}}','{{this.photo}}')"
-                class="main-btn"
-              >
-                加入购物车
+              {{#if (eq this.dserve 0)}}
+                <button class="main-btn" disabled>已售罄</button>
+              {{else}}
+                <button
+                  onclick="addFoodToBasket('{{this.id}}','{{this.dname}}','{{this.dprice}}','{{this.photo}}')"
+                  class="main-btn"
+                >
+                  加入购物车
+                </button>
+              {{/if}}
+              
+              <button class="white-btn2 ms-2" onclick="handleFavourite('{{this.id}}')">
+                收藏
               </button>
 
-              <!-- 收藏按钮，所有人都可见 -->
-              <button class="white-btn2 ms-2" onclick="handleFavourite('{{this._id}}')">
-                收藏
+              <button class="white-btn2 ms-2" onclick="window.location.href='/feedbacks?dishId={{this.id}}'">
+                查看反馈
               </button>
             </div>
           </div>
@@ -108,23 +106,15 @@
     </div>
   </section>
 
-  <!-- 前端脚本：SweetAlert2, jQuery, 购物车script.js等等 -->
   <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
   <script src="/static/js/script.js"></script>
 
-  <!-- 
-    把后端的 loginUser.type 注入前端:
-    - 已登录 => 'normal' / 'admin' / 'employee'
-    - 未登录 => 'none'
-  -->
   <script>
     var userType = '{{#if loginUser}}{{loginUser.type}}{{else}}none{{/if}}';
 
-    // 点击收藏按钮 => handleFavourite
     async function handleFavourite(dishId) {
       if (userType === 'none') {
-        // 未登录
         Swal.fire({
           icon: 'info',
           title: '请先登录',
@@ -134,7 +124,6 @@
         return;
       }
       if (userType !== 'normal') {
-        // 登录了但不是normal
         Swal.fire({
           icon: 'warning',
           title: '无权限收藏',
@@ -144,31 +133,25 @@
         return;
       }
 
-      // 若是 normal => 通过 fetch 发送 POST 请求
       try {
         const response = await fetch(`/user/addFavourite/${dishId}`, {
           method: 'POST'
         });
         if (!response.ok) {
-          // HTTP状态非200~299
           const errText = await response.text();
           throw new Error(errText);
         }
-        const result = await response.json(); // 假设后端返回 {success:true, message:'收藏成功'}
+        const result = await response.json();
         if (result.success) {
-          // 收藏成功
           Swal.fire({
             icon: 'success',
             title: '收藏成功',
             text: result.message,
             confirmButtonText: '好的'
           }).then(() => {
-            // 根据需求，可刷新当前页面，或跳转至 /foods/1
-            // window.location.href = '/foods/1';
             window.location.reload();
           });
         } else {
-          // 后端返回 success=false
           Swal.fire({
             icon: 'error',
             title: '收藏失败',
@@ -177,7 +160,6 @@
           });
         }
       } catch (err) {
-        // try块报错 => 网络异常 or throw new Error(...)
         Swal.fire({
           icon: 'error',
           title: '收藏失败',

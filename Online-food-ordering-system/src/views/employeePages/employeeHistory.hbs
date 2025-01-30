@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>历史订单 - 员工</title>
 </head>
-
 <body>
     {{> navbar loginUser=loginUser}}
     <section>
@@ -39,38 +38,26 @@
                                     <td>{{this.price}}</td>
                                     <td>{{this.quantity}}</td>
                                     <td>{{this.pickupTime}}</td>
-                                    <td>{{this.specialRequests}}</td>
+                                    <td><strong style="color: red;">{{this.specialRequests}}</strong></td>
                                     <td>{{this.states}}</td>
-                                    <td>{{#if this.feedback}}{{this.feedback.rating}}{{/if}}</td>
-                                    <td>{{#if this.feedback}}{{this.feedback.comment}}{{/if}}</td>
+                                    <td>
+                                        {{#if this.feedback}}
+                                            {{this.feedback.rating}} 星
+                                        {{else}}
+                                            暂无评分
+                                        {{/if}}
+                                    </td>
+                                    <td>
+                                        {{#if this.feedback}}
+                                            {{this.feedback.comment}}
+                                        {{else}}
+                                            暂无评价
+                                        {{/if}}
+                                    </td>
                                 </tr>
                                 {{/each}}
                             </tbody>
                         </table>
-
-                        <!-- 分页 -->
-                        <nav aria-label="Page navigation" class="mt-3 mb-5">
-                            <ul class="pagination justify-content-end">
-                                <li class="page-item">
-                                    <a class="page-link {{#ifprev currentPage}}{{/ifprev}}" 
-                                       href="/employee/history/{{#prevPage currentPage}}{{/prevPage}}" 
-                                       aria-label="Previous">
-                                        <span aria-hidden="true">&laquo;</span>
-                                    </a>
-                                </li>
-                                {{#times count}}
-                                <li class="page-item"><a class="page-link" href="/employee/history/{{this}}">{{this}}</a></li>
-                                {{/times}}
-                                <li class="page-item">
-                                    <a class="page-link {{#ifnext currentPage count}}{{/ifnext}}" 
-                                       href="/employee/history/{{#nextPage currentPage}}{{/nextPage}}" 
-                                       aria-label="Next">
-                                        <span aria-hidden="true">&raquo;</span>
-                                    </a>
-                                </li>
-                            </ul>
-                        </nav>
-
                     </div>
                 </div>
             </div>

@@ -2,8 +2,6 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>菜品管理 - 管理员</title>
 </head>
 
@@ -12,11 +10,9 @@
     <section>
         <div class="container-fluid">
             <div class="row">
-                <!-- 侧边栏 -->
                 <div class="col-md-3">
                     {{> sidebar}}
                 </div>
-                <!-- 菜品列表 -->
                 <div class="col-md-9">
                     <div class="card m-3 p-3">
                         <h4 class="text-center">菜品管理</h4>
@@ -42,10 +38,8 @@
                                     <td>{{this.ddiscount}}%</td>
                                     <td>{{this.dtime}}</td>
                                     <td>
-                                        <!-- 编辑 -->
-                                        <button onclick="editDish('{{this._id}}')" class="btn btn-sm btn-warning">编辑</button>
-                                        <!-- 删除 -->
-                                        <button onclick="deleteDish('{{this._id}}')" class="btn btn-sm btn-danger">删除</button>
+                                        <button onclick="editDish('{{this.id}}')" class="btn btn-sm btn-warning">编辑</button>
+                                        <button onclick="deleteDish('{{this.id}}')" class="btn btn-sm btn-danger">删除</button>
                                     </td>
                                 </tr>
                                 {{/each}}

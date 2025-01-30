@@ -27,7 +27,22 @@
                   烹饪时间：{{this.dtime}} 分钟 <br>
                   描述：{{this.discription}}
                 </p>
-                <!-- 也可添加立即下单按钮 -->
+                <div class="d-flex justify-content-end flex-wrap" style="gap:8px;">
+                  {{#if (eq this.dserve 0)}}
+                    <button class="main-btn" disabled>已售罄</button>
+                  {{else}}
+                    <button 
+                      onclick="addFoodToBasket('{{this.id}}','{{this.dname}}','{{this.dprice}}','{{this.photo}}')"
+                      class="main-btn"
+                    >
+                      加入购物车
+                    </button>
+                  {{/if}}
+
+                  <button class="white-btn2" onclick="window.location.href='/feedbacks?dishId={{this.id}}'">
+                    查看反馈
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -38,10 +53,13 @@
             <p>暂无收藏的菜品。</p>
           </div>
           {{/unless}}
-
         </div>
       </div>
     </div>
   </section>
+
+  <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
+  <script src="/static/js/script.js"></script>
 </body>
 </html>

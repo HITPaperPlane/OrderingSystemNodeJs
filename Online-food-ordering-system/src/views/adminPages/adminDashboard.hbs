@@ -9,7 +9,7 @@
 <body>
   {{> navbar loginUser=loginUser}}
 
-    <section>
+    <section class="mt-5 pt-4">
         <div class="container-fluid">
             <div class="row">
                 <!-- 侧边栏 -->
@@ -19,51 +19,184 @@
                 <!-- 管理员仪表盘内容 -->
                 <div class="col-md-9">
                     <div class="card m-3 p-3">
-                        <h4 class="text-center">管理员仪表盘</h4>
+                        <div class="d-flex align-items-center mb-3">
+                            {{#if loginUser.photo}}
+                            <img src="/static/userImages/{{loginUser.photo}}" alt="管理员头像" style="width:80px; height:80px; border-radius:50%; margin-right:15px;">
+                            {{else}}
+                            <img src="/static/image/review/review-1.jpg" alt="默认头像" style="width:80px; height:80px; border-radius:50%; margin-right:15px;">
+                            {{/if}}
+                            <h4 class="mb-0">管理员仪表盘 - 欢迎您, {{loginUser.name}}</h4>
+                        </div>
                         <hr>
                         <div class="row">
-                            <div class="col-md-6 mb-3">
+                            <!-- 菜品管理卡片 -->
+                            <div class="col-md-4 mb-3">
                                 <div class="card">
                                     <div class="card-body text-center">
-                                        <img style="width:130px;height:130px;border-radius:50%" src="/static/image/img/d2.jpg" alt="菜品示例">
-                                        <h3 class="my-2 primary-color">今日订单</h3>
-                                        <h2 class="primary-color mb-0 pb-2">4352+</h2>
+                                        <img style="width:130px;height:130px;border-radius:50%" src="/static/image/img/d2.jpg" alt="菜品">
+                                        <h3 class="my-2 primary-color">菜品管理</h3>
+                                        <div class="mt-3">
+                                            <a href="/admin/addDish" class="btn btn-primary btn-sm m-1">添加菜品</a>
+                                            <a href="/admin/dishMenus/1" class="btn btn-info btn-sm m-1">菜品列表</a>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-6 mb-3">
+                            
+                            <!-- 订单管理卡片 -->
+                            <div class="col-md-4 mb-3">
                                 <div class="card">
                                     <div class="card-body text-center">
-                                        <img style="width:130px;height:130px;border-radius:50%" src="/static/image/img/chef.jpg" alt="厨师">
-                                        <h3 class="my-2 primary-color">厨师数量</h3>
-                                        <h2 class="primary-color mb-0 pb-2">52+</h2>
+                                        <img style="width:130px;height:130px;border-radius:50%" src="/static/image/img/chef.jpg" alt="订单">
+                                        <h3 class="my-2 primary-color">订单管理</h3>
+                                        <div class="mt-3">
+                                            <a href="/admin/adminOrder/1" class="btn btn-primary btn-sm">查看订单</a>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-6 mb-3">
+
+                            <!-- 用户管理卡片 -->
+                            <div class="col-md-4 mb-3">
                                 <div class="card">
                                     <div class="card-body text-center">
-                                        <img style="width:130px;height:130px;border-radius:50%" src="/static/image/img/pizza.jpg" alt="披萨">
-                                        <h3 class="my-2 primary-color">在售菜品</h3>
-                                        <h2 class="primary-color mb-0 pb-2">432+</h2>
+                                        <img style="width:130px;height:130px;border-radius:50%" src="/static/image/img/pizza.jpg" alt="用户">
+                                        <h3 class="my-2 primary-color">用户管理</h3>
+                                        <div class="mt-3">
+                                            <a href="/admin/users" class="btn btn-primary btn-sm">管理用户</a>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-6 mb-3">
+
+                            <!-- 统计报告卡片(示例老版) -->
+                            <div class="col-md-4 mb-3">
                                 <div class="card">
                                     <div class="card-body text-center">
-                                        <img style="width:130px;height:130px;border-radius:50%" src="/static/image/img/d1.jpg" alt="菜品示例">
-                                        <h3 class="my-2 primary-color">快速派送</h3>
-                                        <h2 class="primary-color mb-0 pb-2">42+</h2>
+                                        <img style="width:130px;height:130px;border-radius:50%" src="/static/image/img/d1.jpg" alt="报告">
+                                        <h3 class="my-2 primary-color">统计报告(示例)</h3>
+                                        <div class="mt-3">
+                                            <a href="/admin/reports?period=week" class="btn btn-info btn-sm m-1">简易周报</a>
+                                            <a href="/admin/reports?period=month" class="btn btn-primary btn-sm m-1">简易月报</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 新增：更详细的周报、月报 -->
+                            <div class="col-md-8 mb-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h3 class="primary-color">周报 / 月报</h3>
+                                        <p>生成更详细的订单趋势、客户偏好和销售数据报告。</p>
+
+                                        <!-- 周报按钮 -->
+                                        <div class="mb-3">
+                                            <strong>周报：</strong>
+                                            <a href="/admin/weeklyTrendReport" class="btn btn-outline-info btn-sm mx-1">趋势与偏好</a>
+                                            <a href="/admin/weeklySalesReport" class="btn btn-outline-primary btn-sm mx-1">销售报告</a>
+                                        </div>
+
+                                        <!-- 月报按钮 -->
+                                        <div class="mb-3">
+                                            <strong>月报：</strong>
+                                            <a href="/admin/monthlyTrendReport" class="btn btn-outline-info btn-sm mx-1">趋势与偏好</a>
+                                            <a href="/admin/monthlySalesReport" class="btn btn-outline-primary btn-sm mx-1">销售报告</a>
+                                        </div>
+
+                                        <!-- 新增：倒计时 & 立即发送按钮 -->
+                                        <div class="border border-secondary rounded p-3">
+                                            <h5>自动发送倒计时</h5>
+                                            <p>下次周报发送：<span id="weeklyCountdown" style="color:red;"></span></p>
+                                            <p>下次月报发送：<span id="monthlyCountdown" style="color:red;"></span></p>
+                                            <div>
+                                                <a href="/admin/sendWeeklyNow" class="btn btn-sm btn-warning me-2">立即发送周报</a>
+                                                <a href="/admin/sendMonthlyNow" class="btn btn-sm btn-warning">立即发送月报</a>
+                                            </div>
+                                        </div>
+                                        <small class="text-muted">*手动发送不会重置自动发送的定时器</small>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <p class="text-center">欢迎来到管理员后台，您可以在此管理菜品、查看订单、管理用户等。</p>
+                        <p class="text-center mt-3">
+                            欢迎来到管理员后台，您可以在此管理菜品、查看订单、管理用户、生成报告等。
+                        </p>
                     </div>
                 </div>
             </div>
         </div>
     </section>
+
+    <script>
+    /**
+     * 这里简单演示：
+     *  - 每周日 0点为下次周报
+     *  - 每月1日 0点为下次月报
+     * 通过前端JS计算与当前时间的差值，只是演示用。
+     */
+    function getNextSundayMidnight() {
+        // 从当前时间开始，找到下一个周日的 00:00
+        const now = new Date();
+        const day = now.getDay(); // 0是周日
+        // 如果今天就是周日，看是否已过00:00
+        // 简化起见：假设每周日 00:00
+        let daysToSunday = 7 - day;
+        if (day === 0) {
+            // 表示今天是周日，看看是否过了0点
+            // 若已经过0点，就要下个周日
+            if (now.getHours() === 0 && now.getMinutes() === 0 && now.getSeconds() === 0) {
+                daysToSunday = 0;
+            } else {
+                daysToSunday = 7; 
+            }
+        }
+        const nextSunday = new Date(now.getTime());
+        nextSunday.setDate(now.getDate() + daysToSunday);
+        // 设到下个周日 00:00:00
+        nextSunday.setHours(0, 0, 0, 0);
+        return nextSunday;
+    }
+
+    function getNextMonthFirstMidnight() {
+        // 找下个月1日 00:00
+        const now = new Date();
+        let year = now.getFullYear();
+        let month = now.getMonth(); // 0-11
+        // 如果今天就是1号 00:00，就看是否过
+        // 简化，直接算下个月1号
+        let nextMonth = (month + 1) % 12;
+        let nextYear = year + Math.floor((month + 1) / 12);
+
+        return new Date(nextYear, nextMonth, 1, 0, 0, 0, 0);
+    }
+
+    function updateCountdowns() {
+        const now = new Date();
+        const nextSun = getNextSundayMidnight();
+        const diff1 = (nextSun - now) / 1000; // 秒差
+        const weeklyDays = Math.floor(diff1 / (3600*24));
+        const weeklyHours = Math.floor((diff1 % (3600*24)) / 3600);
+        const weeklyMins = Math.floor((diff1 % 3600) / 60);
+        const weeklySecs = Math.floor(diff1 % 60);
+
+        document.getElementById('weeklyCountdown').textContent =
+            `${weeklyDays}天 ${weeklyHours}小时 ${weeklyMins}分钟 ${weeklySecs}秒`;
+
+        // 月报
+        const nextMonthFirst = getNextMonthFirstMidnight();
+        const diff2 = (nextMonthFirst - now) / 1000;
+        const monthlyDays = Math.floor(diff2 / (3600*24));
+        const monthlyHours = Math.floor((diff2 % (3600*24)) / 3600);
+        const monthlyMins = Math.floor((diff2 % 3600) / 60);
+        const monthlySecs = Math.floor(diff2 % 60);
+
+        document.getElementById('monthlyCountdown').textContent =
+            `${monthlyDays}天 ${monthlyHours}小时 ${monthlyMins}分钟 ${monthlySecs}秒`;
+    }
+
+    // 每秒更新一次
+    setInterval(updateCountdowns, 1000);
+    </script>
 </body>
 </html>

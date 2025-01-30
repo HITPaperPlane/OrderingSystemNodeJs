@@ -2,7 +2,6 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>订单通知 - 员工</title>
 </head>
 
@@ -26,11 +25,11 @@
                                         <strong>价格：</strong> ￥{{this.price}} <br>
                                         <strong>数量：</strong> {{this.quantity}} <br>
                                         <strong>取餐时间：</strong> {{this.pickupTime}} <br>
-                                        <strong>特殊需求：</strong> {{this.specialRequests}} <br>
+                                        <strong>特殊需求：</strong> <span style="color: red; font-weight: bold;">{{this.specialRequests}}</span> <br>
                                         <strong>订单状态：</strong> {{this.states}}
                                     </p>
-                                    <button class="btn btn-sm btn-success" onclick="markInProgress('{{this._id}}')">标记为进行中</button>
-                                    <button class="btn btn-sm btn-danger" onclick="markCompleted('{{this._id}}')">标记为已完成</button>
+                                    <button class="btn btn-sm btn-success" onclick="markInProgress('{{this.id}}')">标记为进行中</button>
+                                    <button class="btn btn-sm btn-danger" onclick="markCompleted('{{this.id}}')">标记为已完成</button>
                                 </div>
                             </div>
                             {{/each}}
@@ -45,7 +44,7 @@
         function markInProgress(orderId) {
             Swal.fire({
                 title: '标记为进行中？',
-                text: "确认将此订单标记为“进行中”吗？",
+                text: "确认将此订单标记为进行中吗？",
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonText: '确定',
@@ -72,7 +71,7 @@
         function markCompleted(orderId) {
             Swal.fire({
                 title: '标记为完成？',
-                text: "确认将此订单标记为“完成”吗？",
+                text: "确认将此订单标记为完成吗？",
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonText: '确定',

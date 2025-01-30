@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>用户反馈</title>
+</head>
+<body>
+  {{> navbar loginUser=loginUser}}
+
+  <section class="container-fluid" style="min-height: 85vh; padding-top: 70px;">
+    <div class="container">
+      <h3 class="mb-3">用户反馈列表</h3>
+
+      <!-- 顶部一些过滤按钮示例 -->
+      <form method="get" action="/feedbacks" class="d-flex align-items-center mb-3">
+        {{#if dishId}}
+        <input type="hidden" name="dishId" value="{{dishId}}">
+        {{/if}}
+        {{#if (eq loginUser.type 'normal')}}
+        <label class="me-2">只看我的反馈:</label>
+        <input type="checkbox" name="onlyMine" value="1" {{#if onlyMine}}checked{{/if}} 
+               onchange="this.form.submit()">
+        {{/if}}
+      </form>
+
+      <!-- 若 dishId 存在，也可在这里加一句提示 -->
+      {{#if dishId}}
+        <p class="text-info">仅显示与本菜品(ID={{dishId}})相关的订单反馈</p>
+      {{/if}}
+
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>菜名</th>
+            <th>用户</th>
+            <th>评分</th>
+            <th>评论</th>
+            <th>反馈时间</th>
+            <th>管理员回复</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each feedbackList}}
+          <tr>
+            <td>{{this.dname}}</td>
+            <td>{{this.userName}}</td>
+            <td>{{this.rating}} 星</td>
+            <td>{{this.comment}}</td>
+            <td>{{this.createdAt}}</td>
+
+            <td>
+              {{#if this.adminReply}}
+                <p>{{this.adminReply}}</p>
+                <small class="text-secondary">
+                  回复时间:
+                  {{#if this.adminReplyCreatedAt}}
+                    {{this.adminReplyCreatedAt}}
+                  {{else}}
+                    未记录
+                  {{/if}}
+                </small>
+                <!-- 若我是这个反馈的用户 && adminReplyRead=false，则显示【未读】提示 -->
+                {{#if (eq this.userId ../loginUser.id)}}
+                  {{#if (eq this.adminReplyRead 0)}}
+                    <div class="text-danger">【管理员回复未读】</div>
+                  {{/if}}
+                {{/if}}
+              {{else}}
+                <span class="text-muted">暂无回复</span>
+              {{/if}}
+            </td>
+
+            <td>
+              <!-- 若我是管理员 => 显示回复或修改回复表单 -->
+              {{#if (eq ../loginUser.type 'admin')}}
+                <button class="btn btn-sm btn-primary"
+                        onclick="openReplyModal('{{this.id}}','{{this.adminReply}}')">
+                  回复
+                </button>
+              {{/if}}
+
+              <!-- 若我是该反馈的用户且有回复未读 => 显示“标记已读” -->
+              {{#if (eq ../loginUser.type 'normal')}}
+                {{#if (eq this.userId ../loginUser.id)}}
+                  {{#if (and this.adminReply (eq this.adminReplyRead 0))}}
+                    <button class="btn btn-sm btn-success"
+                            onclick="markReplyRead('{{this.id}}')">
+                      标记已读
+                    </button>
+                  {{/if}}
+                {{/if}}
+              {{/if}}
+            </td>
+          </tr>
+          {{/each}}
+        </tbody>
+      </table>
+
+      {{#unless feedbackList.length}}
+      <p class="text-center text-muted">暂时没有相关反馈</p>
+      {{/unless}}
+    </div>
+  </section>
+
+  <!-- 管理员回复弹窗 -->
+  <div class="modal fade" id="replyModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">管理员回复</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="feedbackId">
+          <div class="mb-3">
+            <label class="form-label">回复内容</label>
+            <textarea class="form-control" rows="3" id="replyText"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+          <button class="btn btn-primary" onclick="submitReply()">提交</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // 打开管理员回复的Modal
+  function openReplyModal(fbId, existingReply) {
+    document.getElementById('feedbackId').value = fbId;
+    document.getElementById('replyText').value = existingReply || '';
+    const modal = new bootstrap.Modal(document.getElementById('replyModal'));
+    modal.show();
+  }
+
+  // 提交管理员回复
+  async function submitReply() {
+    const fbId = document.getElementById('feedbackId').value;
+    const text = document.getElementById('replyText').value.trim();
+    if(!text) {
+      Swal.fire('提示','请输入回复内容','info');
+      return;
+    }
+    try {
+        console.log(fbId, text);
+      const resp = await fetch('/feedbacks/reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ feedbackId: fbId, replyText: text })
+      });
+      const result = await resp.json();
+      if(result.success) {
+        Swal.fire('成功', '回复已提交', 'success').then(()=>{
+          window.location.reload();
+        });
+      } else {
+        Swal.fire('错误', result.message || '回复失败', 'error');
+      }
+    } catch(e) {
+      console.error(e);
+      Swal.fire('错误', '网络异常，请稍后再试','error');
+    }
+  }
+
+  // 普通用户标记回复已读
+  async function markReplyRead(fbId){
+    try {
+      const resp = await fetch('/feedbacks/markRead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ feedbackId: fbId })
+      });
+      const result = await resp.json();
+      if(result.success){
+        Swal.fire('成功', '已标记为已读','success').then(()=>{
+          window.location.reload();
+        });
+      } else {
+        Swal.fire('错误', result.message || '标记失败','error');
+      }
+    } catch(e){
+      console.error(e);
+      Swal.fire('错误', '网络异常，请稍后再试','error');
+    }
+  }
+</script>
+
+</body>
+</html>

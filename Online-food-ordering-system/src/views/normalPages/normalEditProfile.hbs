@@ -42,6 +42,8 @@
                 <input type="file" class="form-control" id="photo" name="photo">
                 {{#if loginUser.photo}}
                   <img src="/static/userImages/{{loginUser.photo}}" alt="用户头像" style="width:80px; height:80px; margin-top:8px; border-radius:50%;">
+                {{else}}
+                  <p class="text-muted mt-2">暂无头像</p>
                 {{/if}}
               </div>
               <button type="submit" class="btn btn-success">保存</button>

@@ -41,24 +41,40 @@
                                 <td>{{this.paymentType}}</td>
                                 <td>{{this.states}}</td>
                                 <td>
-                                  <!-- 只有订单完成后才能评价 -->
-                                  {{#if (eq this.states "Order completed.")}}
-                                  <form action="/user/feedback" method="post" style="display:flex; gap:4px;">
-                                    <input type="hidden" name="orderId" value="{{this._id}}">
-                                    <select name="rating" class="form-select form-select-sm" required>
-                                      <option value="" disabled selected>评分</option>
-                                      <option value="1">1星</option>
-                                      <option value="2">2星</option>
-                                      <option value="3">3星</option>
-                                      <option value="4">4星</option>
-                                      <option value="5">5星</option>
-                                    </select>
-                                    <input type="text" class="form-control form-control-sm" name="comment" placeholder="评价内容">
-                                    <button class="btn btn-sm btn-success">提交</button>
-                                  </form>
-                                  {{else}}
-                                  <small>尚未完成或已评价</small>
-                                  {{/if}}
+                                    {{#if (eq this.states "Order completed.")}}
+                                        <form action="/user/feedback" method="post" style="display:flex; flex-direction:column; gap:6px; max-width:200px;">
+                                            <input type="hidden" name="orderId" value="{{this.id}}">
+
+                                            <select name="rating" class="form-select form-select-sm" required>
+                                                <option value="" disabled>选择评分</option>
+                                                <option value="1" {{#if this.feedback}}{{#if (eq this.feedback.rating 1)}}selected{{/if}}{{/if}}>1星</option>
+                                                <option value="2" {{#if this.feedback}}{{#if (eq this.feedback.rating 2)}}selected{{/if}}{{/if}}>2星</option>
+                                                <option value="3" {{#if this.feedback}}{{#if (eq this.feedback.rating 3)}}selected{{/if}}{{/if}}>3星</option>
+                                                <option value="4" {{#if this.feedback}}{{#if (eq this.feedback.rating 4)}}selected{{/if}}{{/if}}>4星</option>
+                                                <option value="5" {{#if this.feedback}}{{#if (eq this.feedback.rating 5)}}selected{{/if}}{{/if}}>5星</option>
+                                            </select>
+
+                                            <input type="text" class="form-control form-control-sm"
+                                                   name="comment"
+                                                   placeholder="评价内容"
+                                                   value="{{#if this.feedback}}{{this.feedback.comment}}{{/if}}"
+                                            />
+
+                                            <button class="btn btn-sm btn-success">
+                                                {{#if this.feedback}}更新评价{{else}}提交评价{{/if}}
+                                            </button>
+                                        </form>
+
+                                        {{#if this.feedback}}
+                                        <small class="text-success">
+                                            <strong>当前评价:</strong>  
+                                            {{this.feedback.rating}}星 - {{this.feedback.comment}}
+                                        </small>
+                                        {{/if}}
+
+                                    {{else}}
+                                        <small class="text-muted">订单未完成，暂无法评价</small>
+                                    {{/if}}
                                 </td>
                             </tr>
                             {{/each}}

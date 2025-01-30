@@ -23,7 +23,7 @@
                                 <img style="height:200px" src="/static/dishImages/{{this.photo}}" class="img-fluid p-3" alt="订单菜品">
                             </div>
                             <div class="col-md-8 py-3">
-                                <h5 class="text-primary">订单编号：{{this._id}}</h5>
+                                <h5 class="text-primary">订单编号：{{this.id}}</h5>
                                 <p>菜名：{{this.dname}}</p>
                                 <p>价格：￥{{this.price}}</p>
                                 <p>数量：{{this.quantity}}</p>
@@ -32,17 +32,16 @@
                                 <p>特殊需求：{{this.specialRequests}}</p>
 
                                 <div class="text-end">
-                                    {{#ifCancelOrder this.states this._id}}{{/ifCancelOrder}}
+                                    {{#ifCancelOrder this.states this.id}}{{/ifCancelOrder}}
                                 </div>
                             </div>
                         </div>
                     </div>
                     {{/each}}
-
                     {{#unless orderFood.length}}
-                    <div class="text-center my-5">
-                        <h2 class="text-primary">您当前没有未完成的订单</h2>
-                    </div>
+                        <div class="text-center my-5">
+                            <h2 class="text-primary">您当前没有未完成的订单</h2>
+                        </div>
                     {{/unless}}
 
                     {{#if cancelOrder}}
@@ -50,6 +49,16 @@
                         Swal.fire({
                             title: '订单已取消',
                             icon: 'success',
+                            confirmButtonText: '好的'
+                        })
+                    </script>
+                    {{/if}}
+                    {{#if cancelError}}
+                    <script>
+                        Swal.fire({
+                            title: '无法取消',
+                            text: '{{cancelError}}',
+                            icon: 'error',
                             confirmButtonText: '好的'
                         })
                     </script>

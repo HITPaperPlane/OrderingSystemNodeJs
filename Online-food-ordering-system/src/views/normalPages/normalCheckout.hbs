@@ -63,6 +63,14 @@
                 const pickupTime = $('#pickupTime').val();
                 const specialRequests = $('#specialRequests').val();
 
+                // 添加调试日志
+                console.log('提交的数据:', {
+                    cartData,
+                    paymentType,
+                    pickupTime,
+                    specialRequests
+                });
+
                 if (!paymentType) {
                     Swal.fire({
                         title: '请选择支付方式',
@@ -92,6 +100,7 @@
                             specialRequests: specialRequests
                         },
                         success: function (data) {
+                            console.log('下单成功响应:', data);
                             localStorage.removeItem('cart');
                             Swal.fire({
                                 title: '下单成功',
@@ -103,6 +112,13 @@
                             });
                         },
                         error: function (xhr) {
+                            // 添加更详细的错误信息
+                            console.error('下单失败:', {
+                                status: xhr.status,
+                                statusText: xhr.statusText,
+                                responseText: xhr.responseText,
+                                responseJSON: xhr.responseJSON
+                            });
                             Swal.fire({
                                 title: '下单失败',
                                 text: xhr.responseJSON?.message || '请稍后再试',
@@ -112,6 +128,7 @@
                         }
                     });
                 } else {
+                    console.log('购物车为空');
                     Swal.fire({
                         title: '购物车为空',
                         text: '请先选择菜品再下单。',

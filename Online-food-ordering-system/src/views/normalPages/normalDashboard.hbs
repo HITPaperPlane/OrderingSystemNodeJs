@@ -14,8 +14,12 @@
             <div class="container userSection">
                 <div class="row">
                     <div class="col-md-3 text-center">
-                        <!-- 也可放置用户头像 -->
-                        <img class="img-fluid" style="border-radius:50%; max-width:180px;" src="/static/image/review/review-1.jpg" alt="用户头像">
+                        <!-- 根据是否有头像动态显示 -->
+                        {{#if loginUser.photo}}
+                        <img class="img-fluid" style="border-radius:50%; max-width:180px;" src="/static/userImages/{{loginUser.photo}}" alt="用户头像">
+                        {{else}}
+                        <img class="img-fluid" style="border-radius:50%; max-width:180px;" src="/static/image/review/review-1.jpg" alt="默认头像">
+                        {{/if}}
                     </div>
                     <div class="col-md-9">
                         <div class="card py-3 px-3">

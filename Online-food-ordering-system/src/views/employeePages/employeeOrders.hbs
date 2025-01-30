@@ -2,8 +2,6 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>管理订单 - 员工</title>
 </head>
 
@@ -39,13 +37,13 @@
                                     <td>{{this.price}}</td>
                                     <td>{{this.quantity}}</td>
                                     <td>{{this.pickupTime}}</td>
-                                    <td>{{this.specialRequests}}</td>
+                                    <td><strong style="color: red;">{{this.specialRequests}}</strong></td>
                                     <td>{{this.states}}</td>
                                     <td>
                                         {{#if (eq this.states "NA")}}
-                                            <button class="btn btn-sm btn-success" onclick="updateStatus('{{this._id}}', 'in progress')">标记为进行中</button>
-                                        {{else if (eq this.states "in progress")}}
-                                            <button class="btn btn-sm btn-warning" onclick="updateStatus('{{this._id}}', 'completed')">标记为完成</button>
+                                            <button class="btn btn-sm btn-success" onclick="updateStatus('{{this.id}}','in progress')">标记为进行中</button>
+                                        {{else if (eq this.states "Cooking")}}
+                                            <button class="btn btn-sm btn-warning" onclick="updateStatus('{{this.id}}','completed')">标记为完成</button>
                                         {{else}}
                                             <span class="badge bg-secondary">已完成</span>
                                         {{/if}}
@@ -55,7 +53,6 @@
                             </tbody>
                         </table>
 
-                        <!-- 分页 -->
                         <nav aria-label="Page navigation" class="mt-3 mb-5">
                             <ul class="pagination justify-content-end">
                                 <li class="page-item">
