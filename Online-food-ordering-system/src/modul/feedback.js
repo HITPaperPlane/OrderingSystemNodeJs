@@ -2,131 +2,75 @@ const { pool } = require('../database');
 
 module.exports = {
 
-    // 创建订单
+    // 新增评价
     async create(data) {
         const {
-            dishId, userId, time, pickupTime, specialRequests, 
-            photo, dname, price, quantity, paymentType, states
+            orderId, userId, rating, comment
         } = data;
         const sql = `
-            INSERT INTO orders
-            (dishId, userId, time, pickupTime, specialRequests,
-             photo, dname, price, quantity, paymentType, states)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO feedbacks
+            (orderId, userId, rating, comment, createdAt, updatedAt, adminReply, adminReplyCreatedAt, adminReplyRead)
+            VALUES (?, ?, ?, ?, NOW(), NOW(), '', NULL, 0)
         `;
         const [result] = await pool.query(sql, [
-            dishId, userId, time, pickupTime,
-            specialRequests || '', photo || '', dname || '',
-            price || 0, quantity || 1, paymentType || '',
-            states || 'NA'
+            orderId, userId, rating, comment
         ]);
         return { id: result.insertId, ...data };
     },
 
-    // 按 id 找
+    // 查找是否有已有评价
+    async findOne(orderId, userId) {
+        const sql = `SELECT * FROM feedbacks WHERE orderId=? AND userId=?`;
+        const [rows] = await pool.query(sql, [orderId, userId]);
+        return rows[0] || null;
+    },
+
+    // 更新已有评价
+    async updateFeedback(orderId, userId, rating, comment) {
+        const sql = `
+            UPDATE feedbacks
+            SET rating=?, comment=?, updatedAt=NOW()
+            WHERE orderId=? AND userId=?
+        `;
+        const [result] = await pool.query(sql, [rating, comment, orderId, userId]);
+        return result.affectedRows;
+    },
+
+    // 仅用于 findById
     async findById(id) {
-        const sql = `SELECT * FROM orders WHERE id=?`;
+        const sql = `SELECT * FROM feedbacks WHERE id=?`;
         const [rows] = await pool.query(sql, [id]);
         return rows[0] || null;
     },
 
-    // 删除 (取消订单)
-    async deleteOne(id, userId) {
-        const sql = `DELETE FROM orders WHERE id=? AND userId=?`;
-        const [result] = await pool.query(sql, [id, userId]);
+    async saveAdminReply(feedbackId, replyText) {
+        const sql = `
+            UPDATE feedbacks
+            SET adminReply=?, adminReplyCreatedAt=NOW(), adminReplyRead=0
+            WHERE id=?
+        `;
+        const [result] = await pool.query(sql, [replyText, feedbackId]);
         return result.affectedRows;
     },
 
-    // 更新 (修改 states 等)
-    async updateOne(id, updateData) {
-        let fields = [];
-        let values = [];
-
-        if (updateData.states !== undefined) {
-            fields.push(`states=?`);
-            values.push(updateData.states);
-        }
-        if (updateData.pickupTime !== undefined) {
-            fields.push(`pickupTime=?`);
-            values.push(updateData.pickupTime);
-        }
-        // 可按需增加其他字段更新
-
-        if(!fields.length) return;
-        const sql = `UPDATE orders SET ${fields.join(', ')} WHERE id=?`;
-        values.push(id);
-        const [r] = await pool.query(sql, values);
-        return r.affectedRows;
+    async markRead(feedbackId) {
+        const sql = `
+            UPDATE feedbacks
+            SET adminReplyRead=1
+            WHERE id=?
+        `;
+        await pool.query(sql, [feedbackId]);
     },
 
-    // 查找(支持 states != 'Order completed.')
-    // 同时支持分页排序
-    async find(filter = {}, sortField = 'pickupTime', sortOrder = 'ASC', skip=0, limit=999999) {
-        let sql = `SELECT * FROM orders`;
-        let wheres = [];
-        let params = [];
-
-        // 若指定 userId
-        if(filter.userId !== undefined) {
-            wheres.push(`userId=?`);
-            params.push(filter.userId);
-        }
-        // 若指定 statesNe => states <> 'xxx'
-        if(filter.statesNe !== undefined) {
-            wheres.push(`states<>?`);
-            params.push(filter.statesNe);
-        }
-        // 若指定 states= 'Order completed.'
-        if(filter.states === 'Order completed.') {
-            wheres.push(`states='Order completed.'`);
-        }
-
-        if(wheres.length) {
-            sql += ' WHERE ' + wheres.join(' AND ');
-        }
-        // 排序
-        sql += ` ORDER BY ${sortField} ${sortOrder}`;
-        // 分页
-        sql += ` LIMIT ?,?`;
-        params.push(skip, limit);
-
-        const [rows] = await pool.query(sql, params);
+    // 根据若干查询条件去找
+    // dishId => 先找 orders ？(在 routes 里做也行)
+    // 此处直接给出 findAll, 再由路由层自己判断
+    async findAll() {
+        const sql = `SELECT * FROM feedbacks ORDER BY createdAt DESC`;
+        const [rows] = await pool.query(sql);
         return rows;
     },
 
-    // 统计行数
-    async count(filter = {}) {
-        let sql = `SELECT COUNT(*) as cnt FROM orders`;
-        let wheres = [];
-        let params = [];
-
-        if(filter.userId !== undefined) {
-            wheres.push(`userId=?`);
-            params.push(filter.userId);
-        }
-        if(filter.statesNe !== undefined) {
-            wheres.push(`states<>?`);
-            params.push(filter.statesNe);
-        }
-        if(filter.states === 'Order completed.') {
-            wheres.push(`states='Order completed.'`);
-        }
-
-        if(wheres.length) {
-            sql += ' WHERE ' + wheres.join(' AND ');
-        }
-        const [rows] = await pool.query(sql, params);
-        return rows[0].cnt;
-    },
-
-    // 用于每周/每月报表: 找 time >= X
-    // time 存 DATETIME，比较时可将 JS Date => MySQL datetime
-    async findByTimeRange(startDate) {
-        const startStr = formatDateTime(startDate);
-        const sql = `SELECT * FROM orders WHERE time >= ?`;
-        const [rows] = await pool.query(sql, [startStr]);
-        return rows;
-    },
     // 按指定条件找
     async findByCondition(whereClause, params) {
         let sql = `SELECT * FROM feedbacks`;
@@ -136,21 +80,5 @@ module.exports = {
         sql += ` ORDER BY createdAt DESC`;
         const [rows] = await pool.query(sql, params);
         return rows;
-    },
-    async findAll() {
-        const sql = `SELECT * FROM feedbacks ORDER BY createdAt DESC`;
-        const [rows] = await pool.query(sql);
-        return rows;
-    },
+    }
 };
-
-// 工具函数：简单时间格式化(yyyy-mm-dd hh:mm:ss)
-function formatDateTime(dt) {
-    let yyyy = dt.getFullYear();
-    let mm = String(dt.getMonth()+1).padStart(2, '0');
-    let dd = String(dt.getDate()).padStart(2, '0');
-    let hh = String(dt.getHours()).padStart(2, '0');
-    let mi = String(dt.getMinutes()).padStart(2, '0');
-    let ss = String(dt.getSeconds()).padStart(2, '0');
-    return `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss}`;
-}
