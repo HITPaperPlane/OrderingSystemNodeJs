@@ -126,7 +126,22 @@ module.exports = {
         const sql = `SELECT * FROM orders WHERE time >= ?`;
         const [rows] = await pool.query(sql, [startStr]);
         return rows;
-    }
+    },
+    // 按指定条件找
+    async findByCondition(whereClause, params) {
+        let sql = `SELECT * FROM feedbacks`;
+        if(whereClause) {
+            sql += ` WHERE ${whereClause}`;
+        }
+        sql += ` ORDER BY createdAt DESC`;
+        const [rows] = await pool.query(sql, params);
+        return rows;
+    },
+    async findAll() {
+        const sql = `SELECT * FROM feedbacks ORDER BY createdAt DESC`;
+        const [rows] = await pool.query(sql);
+        return rows;
+    },
 };
 
 // 工具函数：简单时间格式化(yyyy-mm-dd hh:mm:ss)

@@ -80,17 +80,21 @@
                 </button>
               {{/if}}
 
-              <!-- 若我是该反馈的用户且有回复未读 => 显示“标记已读” -->
-              {{#if (eq ../loginUser.type 'normal')}}
+              <!-- 若我是该反馈的用户 -->
+                {{#if (eq ../loginUser.type 'normal')}}
                 {{#if (eq this.userId ../loginUser.id)}}
-                  {{#if (and this.adminReply (eq this.adminReplyRead 0))}}
-                    <button class="btn btn-sm btn-success"
-                            onclick="markReplyRead('{{this.id}}')">
-                      标记已读
-                    </button>
-                  {{/if}}
+                    {{#if this.adminReply}}
+                    {{#if (eq this.adminReplyRead 0)}}
+                        <button class="btn btn-sm btn-success"
+                                onclick="markReplyRead('{{this.id}}')">
+                        标记已读
+                        </button>
+                    {{else}}
+                        <span class="badge bg-secondary">已读</span>
+                    {{/if}}
+                    {{/if}}
                 {{/if}}
-              {{/if}}
+                {{/if}}
             </td>
           </tr>
           {{/each}}
