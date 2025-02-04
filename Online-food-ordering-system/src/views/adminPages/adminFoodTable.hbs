@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>菜品管理 - 管理员</title>
+    <title>Dishes Management - Admin</title>
 </head>
 
 <body>
@@ -15,16 +15,16 @@
                 </div>
                 <div class="col-md-9">
                     <div class="card m-3 p-3">
-                        <h4 class="text-center">菜品管理</h4>
+                        <h4 class="text-center">Dish</h4>
                         <table class="table table-striped">
                             <thead>
                                 <tr>
-                                    <th>图片</th>
-                                    <th>菜名</th>
-                                    <th>价格</th>
-                                    <th>折扣</th>
-                                    <th>烹饪时间(分)</th>
-                                    <th>操作</th>
+                                    <th>Picture</th>
+                                    <th>Dish Name</th>
+                                    <th>Price</th>
+                                    <th>Discount</th>
+                                    <th>Cooking time(mins)</th>
+                                    <th>Operation</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -38,8 +38,8 @@
                                     <td>{{this.ddiscount}}%</td>
                                     <td>{{this.dtime}}</td>
                                     <td>
-                                        <button onclick="editDish('{{this.id}}')" class="btn btn-sm btn-warning">编辑</button>
-                                        <button onclick="deleteDish('{{this.id}}')" class="btn btn-sm btn-danger">删除</button>
+                                        <button onclick="editDish('{{this.id}}')" class="btn btn-sm btn-warning">Edit</button>
+                                        <button onclick="deleteDish('{{this.id}}')" class="btn btn-sm btn-danger">Delete</button>
                                     </td>
                                 </tr>
                                 {{/each}}
@@ -71,10 +71,10 @@
                         {{#if delete}}
                         <script>
                             Swal.fire({
-                                title: '删除成功',
-                                text: '该菜品已被移除。',
+                                title: 'delete success',
+                                text: 'The dish has been deleted successfully',
                                 icon: 'success',
-                                confirmButtonText: '好的'
+                                confirmButtonText: 'ok'
                             })
                         </script>
                         {{/if}}
@@ -90,15 +90,15 @@ function editDish(id){
 }
 function deleteDish(id) {
     Swal.fire({
-        title: '确定删除这道菜品吗？',
+        title: 'Are you sure?',
         showDenyButton: true,
-        confirmButtonText: '确认',
-        denyButtonText: '取消'
+        confirmButtonText: 'Yes',
+        denyButtonText: 'No',
     }).then((result) => {
         if (result.isConfirmed) {
             location.assign("/admin/deleteDish/" + id)
         } else if (result.isDenied) {
-            Swal.fire('已取消删除', '', 'info')
+            Swal.fire('Cancelled', '', 'info')
         }
     })
 }

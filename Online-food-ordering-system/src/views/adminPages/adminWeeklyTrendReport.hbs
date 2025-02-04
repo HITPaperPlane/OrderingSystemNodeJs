@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>周报 - 趋势与偏好</title>
+    <title>Weekly - Trend and Preference</title>
 </head>
 <body>
 {{> navbar loginUser=loginUser}}
@@ -15,16 +15,16 @@
       </div>
       <div class="col-md-9">
         <div class="card m-3 p-3">
-          <h3>周报 - 订单趋势与客户偏好</h3>
+          <h3>Weekly - Trend and Preference</h3>
           <hr>
 
-          <!-- 订单趋势 (trendData) -->
-          <h5 class="mt-3">一、订单趋势（最近 7 天）</h5>
+          <!--  (trendData) -->
+          <h5 class="mt-3">Trend (Recently 7 days)</h5>
           <table class="table table-bordered">
             <thead>
               <tr>
-                <th>日期</th>
-                <th>订单数量</th>
+                <th>Date</th>
+                <th>Amount</th>
               </tr>
             </thead>
             <tbody>
@@ -37,16 +37,16 @@
             </tbody>
           </table>
           {{#unless trendData.length}}
-          <p>最近 7 天暂无订单数据</p>
+          <p>No data in 7 days</p>
           {{/unless}}
 
-          <!-- 客户偏好 (preferenceData) -->
-          <h5 class="mt-4">二、客户偏好（销量前五的菜品）</h5>
+          <!-- (preferenceData) -->
+          <h5 class="mt-4">Preference (Top5)</h5>
           <table class="table table-striped">
             <thead>
               <tr>
-                <th>菜品名称</th>
-                <th>销量合计</th>
+                <th>Dish</th>
+                <th>Total</th>
               </tr>
             </thead>
             <tbody>
@@ -59,7 +59,7 @@
             </tbody>
           </table>
           {{#unless preferenceData.length}}
-          <p>最近 7 天暂无销量记录</p>
+          <p>No record in 7 days</p>
           {{/unless}}
 
         </div>

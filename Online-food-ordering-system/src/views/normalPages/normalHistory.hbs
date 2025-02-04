@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>历史订单 - 美食订餐</title>
+    <title>Order History - Golden Bowl</title>
 </head>
 <body>
     {{> navbar loginUser=loginUser}}
@@ -13,26 +13,26 @@
 
             <div class="container">
                 <div class="card p-4">
-                    <h4 class="text-center">历史订单</h4>
+                    <h4 class="text-center">Order History</h4>
                     <hr>
                     <table class="table table-hover">
                         <thead>
                             <tr>
-                                <th>图片</th>
-                                <th>菜名</th>
-                                <th>下单时间</th>
-                                <th>价格(元)</th>
-                                <th>数量</th>
-                                <th>支付方式</th>
-                                <th>订单状态</th>
-                                <th>评价</th>
+                                <th>Image</th>
+                                <th>Dish Name</th>
+                                <th>Order Time</th>
+                                <th>Price (NZD)</th>
+                                <th>Quantity</th>
+                                <th>Payment Method</th>
+                                <th>Order Status</th>
+                                <th>Review</th>
                             </tr>
                         </thead>
                         <tbody>
                             {{#each history}}
                             <tr>
                                 <td>
-                                    <img style="width:50px;height:50px;border-radius:50%" src="/static/dishImages/{{this.photo}}" alt="订单菜图">
+                                    <img style="width:50px;height:50px;border-radius:50%" src="/static/dishImages/{{this.photo}}" alt="Dish Image">
                                 </td>
                                 <td>{{this.dname}}</td>
                                 <td>{{this.time}}</td>
@@ -46,34 +46,34 @@
                                             <input type="hidden" name="orderId" value="{{this.id}}">
 
                                             <select name="rating" class="form-select form-select-sm" required>
-                                                <option value="" disabled>选择评分</option>
-                                                <option value="1" {{#if this.feedback}}{{#if (eq this.feedback.rating 1)}}selected{{/if}}{{/if}}>1星</option>
-                                                <option value="2" {{#if this.feedback}}{{#if (eq this.feedback.rating 2)}}selected{{/if}}{{/if}}>2星</option>
-                                                <option value="3" {{#if this.feedback}}{{#if (eq this.feedback.rating 3)}}selected{{/if}}{{/if}}>3星</option>
-                                                <option value="4" {{#if this.feedback}}{{#if (eq this.feedback.rating 4)}}selected{{/if}}{{/if}}>4星</option>
-                                                <option value="5" {{#if this.feedback}}{{#if (eq this.feedback.rating 5)}}selected{{/if}}{{/if}}>5星</option>
+                                                <option value="" disabled>Select Rating</option>
+                                                <option value="1" {{#if this.feedback}}{{#if (eq this.feedback.rating 1)}}selected{{/if}}{{/if}}>1 Star</option>
+                                                <option value="2" {{#if this.feedback}}{{#if (eq this.feedback.rating 2)}}selected{{/if}}{{/if}}>2 Stars</option>
+                                                <option value="3" {{#if this.feedback}}{{#if (eq this.feedback.rating 3)}}selected{{/if}}{{/if}}>3 Stars</option>
+                                                <option value="4" {{#if this.feedback}}{{#if (eq this.feedback.rating 4)}}selected{{/if}}{{/if}}>4 Stars</option>
+                                                <option value="5" {{#if this.feedback}}{{#if (eq this.feedback.rating 5)}}selected{{/if}}{{/if}}>5 Stars</option>
                                             </select>
 
                                             <input type="text" class="form-control form-control-sm"
                                                    name="comment"
-                                                   placeholder="评价内容"
+                                                   placeholder="comment"
                                                    value="{{#if this.feedback}}{{this.feedback.comment}}{{/if}}"
                                             />
 
                                             <button class="btn btn-sm btn-success">
-                                                {{#if this.feedback}}更新评价{{else}}提交评价{{/if}}
+                                                {{#if this.feedback}}Update Review{{else}}Submit Review{{/if}}
                                             </button>
                                         </form>
 
                                         {{#if this.feedback}}
                                         <small class="text-success">
-                                            <strong>当前评价:</strong>  
-                                            {{this.feedback.rating}}星 - {{this.feedback.comment}}
+                                            <strong>Current Review:</strong>  
+                                            {{this.feedback.rating}} Stars - {{this.feedback.comment}}
                                         </small>
                                         {{/if}}
 
                                     {{else}}
-                                        <small class="text-muted">订单未完成，暂无法评价</small>
+                                        <small class="text-muted">Order not completed, review unavailable</small>
                                     {{/if}}
                                 </td>
                             </tr>

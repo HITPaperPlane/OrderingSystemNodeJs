@@ -1,16 +1,16 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>员工面板 - 美食订餐</title>
+    <title>Employee Panel - Golden Bowl</title>
 </head>
 
 <body>
     {{> navbar loginUser=loginUser}}
 
-    <!-- 这里增加 mt-5 或者内联 style，避免被顶部导航挡住 -->
+    <!-- Add mt-5 or inline style to avoid being blocked by the top navigation-->
     <section class="mt-5 pt-4">
         <div class="container-fluid">
             <div class="row">
@@ -21,42 +21,42 @@
                     <div class="card m-3 p-3">
                         <div class="d-flex align-items-center mb-3">
                             {{#if loginUser.photo}}
-                            <img src="/static/userImages/{{loginUser.photo}}" alt="员工头像" 
+                            <img src="/static/userImages/{{loginUser.photo}}" alt="Employee Avatar" 
                                  style="width:80px; height:80px; border-radius:50%; margin-right:15px;">
                             {{else}}
-                            <img src="/static/image/review/review-1.jpg" alt="默认头像" 
+                            <img src="/static/image/review/review-1.jpg" alt="Default Avatar" 
                                  style="width:80px; height:80px; border-radius:50%; margin-right:15px;">
                             {{/if}}
-                            <h3 class="mb-0">员工面板 - 欢迎您, {{loginUser.name}}</h3>
+                            <h3 class="mb-0">Employee Panel - Welcome, {{loginUser.name}}</h3>
                         </div>
                         <hr>
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <div class="card">
                                     <div class="card-body text-center">
-                                        <h5 class="card-title">订单管理</h5>
-                                        <p class="card-text">查看并更新当前订单。</p>
-                                        <a href="/employee/orders/1" class="btn btn-primary">查看订单</a>
+                                        <h5 class="card-title">Order Management</h5>
+                                        <p class="card-text">View and update current orders.</p>
+                                        <a href="/employee/orders/1" class="btn btn-primary">View Orders</a>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <div class="card">
                                     <div class="card-body text-center">
-                                        <h5 class="card-title">历史订单</h5>
-                                        <p class="card-text">查看以往订单记录。</p>
-                                        <a href="/employee/history/1" class="btn btn-primary">历史记录</a>
+                                        <h5 class="card-title">Order History</h5>
+                                        <p class="card-text">View past order records.</p>
+                                        <a href="/employee/history/1" class="btn btn-primary">Order History</a>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         
-                        <!-- 新增：编辑个人资料入口 -->
+                        <!-- Edit profile  -->
                         <div class="mt-3">
-                            <a href="/employee/editProfile" class="btn btn-secondary">编辑个人资料</a>
+                            <a href="/employee/editProfile" class="btn btn-secondary">Edit Profile</a>
                         </div>
 
-                        <p class="text-center mt-3">欢迎使用员工后台！您可以查看订单详情并根据取餐时间进行优先处理，还可管理菜品库存。</p>
+                        <p class="text-center mt-3">Welcome to the Employee Dashboard! You can view order details and prioritize based on pickup times, as well as manage dish inventory.</p>
                     </div>
                 </div>
             </div>

@@ -1,27 +1,27 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>美食订餐 - 首页</title>
+  <title>Order - Homepage</title>
 </head>
 
 <body>
   {{> navbar loginUser=loginUser}}
 
-  <!-- 首屏横幅 - 游客可浏览的首页，包含欢迎标语、导航按钮等 -->
+  <!-- homepage-->
   <section id="/">
     <div class="container-fluid px-0 top-banner">
       <div class="container">
         <div class="row">
           <div class="col-lg-5 col-md-6">
-            <h1>欢迎来到美食订餐系统</h1>
-            <p>在这里，您可以浏览我们的精美菜品并随时随地下单。</p>
+            <h1>Welcome to Golden Bowl</h1>
+            <p>We supoort delicious food for everyone!</p>
             <div class="mt-4">
-              <!-- “立即点餐”按钮 -->
-              <button class="main-btn" onclick="window.location.href='/foods/1'">立即点餐 <i class="fas fa-shopping-basket ps-3"></i></button>
-              <!-- “立即注册”按钮 -->
-              <button class="white-btn" onclick="window.location.href='/register'">立即注册 <i class="fas fa-angle-right ps-3"></i></button>
+              <!-- Order button -->
+              <button class="main-btn" onclick="window.location.href='/foods/1'">Order Here <i class="fas fa-shopping-basket ps-3"></i></button>
+              <!-- Register button -->
+              <button class="white-btn" onclick="window.location.href='/register'">Register <i class="fas fa-angle-right ps-3"></i></button>
             </div>
           </div>
         </div>
@@ -29,32 +29,32 @@
     </div>
   </section>
 
-  <!-- 关于我们或其他介绍性版块（示例） -->
+  <!-- About us -->
   <section id="about" class="my-5">
     <div class="container">
       <div class="row">
         <div class="col-md-7">
-          <img src="/static/image/img/img-1.png" class="img-fluid py-2" alt="美食图片">
+          <img src="/static/image/img/img-1.png" class="img-fluid py-2" alt="picture">
         </div>
         <div class="col-md-5 mt-md-5 mt-1">
-          <h2>健康与美味，我们都为您准备好了</h2>
-          <p>我们的厨师团队只选用最新鲜的食材，为您呈现口味与品质兼具的佳肴。</p>
-          <button class="main-btn" onclick="window.location.href='/foods/1'">查看菜品</button>
+          <h2>Healthy and tasty</h2>
+          <p>Our team of chefs use only the freshest ingredients to present you with dishes that have both flavour and quality.</p>
+          <button class="main-btn" onclick="window.location.href='/foods/1'">Menu</button>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- 底部示例 -->
+  <!-- footer -->
   <section id="footer">
     <div class="text-center p-4 bg-light">
-      <a href="/register" class="mx-2">注册</a>
-      <a href="/login" class="mx-2">登录</a>
-      <a href="/foods/1" class="mx-2">浏览菜品</a>
+      <a href="/register" class="mx-2">Register</a>
+      <a href="/login" class="mx-2">Login</a>
+      <a href="/foods/1" class="mx-2">Menu</a>
       <br><br>
       <small class="mt-5 text-muted">Copyright © 
         <script>document.write(new Date().getFullYear())</script> 
-        美食订餐系统. 保留所有权利.
+        Golden Bowl. All rights reserved. Name: YIZHAO  Student ID: 1159023
       </small>
     </div>
   </section>

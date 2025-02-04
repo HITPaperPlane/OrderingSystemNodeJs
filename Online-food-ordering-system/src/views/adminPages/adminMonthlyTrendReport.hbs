@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>月报 - 趋势与偏好</title>
+    <title>Monthly - Trend and Preference</title>
 </head>
 <body>
 {{> navbar loginUser=loginUser}}
@@ -15,16 +15,16 @@
       </div>
       <div class="col-md-9">
         <div class="card m-3 p-3">
-          <h3>月报 - 订单趋势与客户偏好</h3>
+          <h3>Monthly - Trend and Preference</h3>
           <hr>
 
-          <!-- 订单趋势 (trendData) -->
-          <h5 class="mt-3">一、订单趋势（最近 30 天）</h5>
+          <!-- (trendData) -->
+          <h5 class="mt-3">Trend(30 days)</h5>
           <table class="table table-bordered">
             <thead>
               <tr>
-                <th>日期</th>
-                <th>订单数量</th>
+                <th>Date</th>
+                <th>Amount</th>
               </tr>
             </thead>
             <tbody>
@@ -41,12 +41,12 @@
           {{/unless}}
 
           <!-- 客户偏好 (preferenceData) -->
-          <h5 class="mt-4">二、客户偏好（销量前五的菜品）</h5>
+          <h5 class="mt-4">Preference(Top5)</h5>
           <table class="table table-striped">
             <thead>
               <tr>
-                <th>菜品名称</th>
-                <th>销量合计</th>
+                <th>Name</th>
+                <th>Total</th>
               </tr>
             </thead>
             <tbody>
@@ -59,7 +59,7 @@
             </tbody>
           </table>
           {{#unless preferenceData.length}}
-          <p>最近 30 天暂无销量记录</p>
+          <p>Recently 30days no sales</p>
           {{/unless}}
 
         </div>

@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>历史订单 - 员工</title>
+    <title>Order History - Employee</title>
 </head>
 <body>
     {{> navbar loginUser=loginUser}}
@@ -15,19 +15,19 @@
                 </div>
                 <div class="col-md-9">
                     <div class="employeePanel card m-3 p-3">
-                        <h3 class="text-center mb-3">历史订单记录</h3>
+                        <h3 class="text-center mb-3">Order History Records</h3>
                         <table class="table table-striped">
                             <thead>
                                 <tr>
-                                    <th>菜名</th>
-                                    <th>顾客</th>
-                                    <th>价格(元)</th>
-                                    <th>数量</th>
-                                    <th>取餐时间</th>
-                                    <th>特殊需求</th>
-                                    <th>订单状态</th>
-                                    <th>评分</th>
-                                    <th>评论</th>
+                                    <th>Dish Name</th>
+                                    <th>Customer</th>
+                                    <th>Price(NZD)</th>
+                                    <th>Quantity</th>
+                                    <th>Pickup Time</th>
+                                    <th>Special Requests</th>
+                                    <th>Order Status</th>
+                                    <th>Rating</th>
+                                    <th>Comment</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -42,16 +42,16 @@
                                     <td>{{this.states}}</td>
                                     <td>
                                         {{#if this.feedback}}
-                                            {{this.feedback.rating}} 星
+                                            {{this.feedback.rating}} Stars
                                         {{else}}
-                                            暂无评分
+                                            No rating available
                                         {{/if}}
                                     </td>
                                     <td>
                                         {{#if this.feedback}}
                                             {{this.feedback.comment}}
                                         {{else}}
-                                            暂无评价
+                                            No comment available
                                         {{/if}}
                                     </td>
                                 </tr>

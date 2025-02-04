@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>注册 - 美食订餐</title>
+    <title>Register</title>
 </head>
 
 <body>
@@ -17,26 +17,26 @@
                     <div class="col-md-6 my-5">
                         <div class="register-form p-4 shadow">
                             <div class="text-center">
-                                <h2 class="primary-color">注册新用户</h2>
+                                <h2 class="primary-color">Register</h2>
                             </div>
                             <form class="form" action="/saveRegistration" method="post">
                                 <div class="mx-2">
-                                    <input name="name" class="form-control mt-3" placeholder="输入您的姓名" type="text" required>
-                                    <input name="email" type="email" placeholder="输入您的邮箱" class="form-control mt-3" required>
-                                    <input name="phone" placeholder="输入您的手机号" type="text" class="form-control mt-3" required>
-                                    <input name="password" type="password" placeholder="输入您的密码" class="form-control mt-3" required>
-                                    <textarea name="address" class="form-control mt-3" placeholder="输入您的收货地址" rows="3" required></textarea>
+                                    <input name="name" class="form-control mt-3" placeholder="Please enter your name" type="text" required>
+                                    <input name="email" type="email" placeholder="Please enter email" class="form-control mt-3" required>
+                                    <input name="phone" placeholder="Please enter phone number" type="text" class="form-control mt-3" required>
+                                    <input name="password" type="password" placeholder="Please enter password" class="form-control mt-3" required>
+                                    <textarea name="address" class="form-control mt-3" placeholder="Please enter address" rows="3" required></textarea>
 
-                                    <!-- 只有 normal / admin / employee 三种选项 -->
+                                    <!-- Only normal / admin / employee  -->
                                     <select name="type" class="form-control mt-3" required>
-                                        <option value="normal">普通用户</option>
-                                        <option value="admin">管理员</option>
-                                        <option value="employee">员工</option>
+                                        <option value="normal">Member</option>
+                                        <option value="admin">Manager</option>
+                                        <option value="employee">Staff</option>
                                     </select>
                                 </div>
 
                                 <div class="text-end">
-                                    <button type="submit" class="main-btn mt-2 mb-1">立即注册</button>
+                                    <button type="submit" class="main-btn mt-2 mb-1">Register</button>
                                 </div>
                             </form>
                         </div>
@@ -44,10 +44,10 @@
                         {{#if registrationError}}
                         <script>
                             Swal.fire({
-                                title: '注册错误',
+                                title: 'Registration Failed',
                                 text: '{{registrationError}}',
                                 icon: 'error',
-                                confirmButtonText: '好的'
+                                confirmButtonText: 'ok'
                             });
                         </script>
                         {{/if}}

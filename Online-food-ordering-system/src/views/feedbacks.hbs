@@ -2,42 +2,42 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <title>用户反馈</title>
+  <title>Feedback</title>
 </head>
 <body>
   {{> navbar loginUser=loginUser}}
 
   <section class="container-fluid" style="min-height: 85vh; padding-top: 70px;">
     <div class="container">
-      <h3 class="mb-3">用户反馈列表</h3>
+      <h3 class="mb-3">Feedback</h3>
 
-      <!-- 顶部一些过滤按钮示例 -->
+      
       <form method="get" action="/feedbacks" class="d-flex align-items-center mb-3">
         {{#if dishId}}
         <input type="hidden" name="dishId" value="{{dishId}}">
         {{/if}}
         {{#if (eq loginUser.type 'normal')}}
-        <label class="me-2">只看我的反馈:</label>
+        <label class="me-2">My feedback:</label>
         <input type="checkbox" name="onlyMine" value="1" {{#if onlyMine}}checked{{/if}} 
                onchange="this.form.submit()">
         {{/if}}
       </form>
 
-      <!-- 若 dishId 存在，也可在这里加一句提示 -->
+      
       {{#if dishId}}
-        <p class="text-info">仅显示与本菜品(ID={{dishId}})相关的订单反馈</p>
+        <p class="text-info">Only display (ID={{dishId}}) feedback</p>
       {{/if}}
 
       <table class="table table-striped">
         <thead>
           <tr>
-            <th>菜名</th>
-            <th>用户</th>
-            <th>评分</th>
-            <th>评论</th>
-            <th>反馈时间</th>
-            <th>管理员回复</th>
-            <th>操作</th>
+            <th>Dish</th>
+            <th>User</th>
+            <th>Rating</th>
+            <th>Comment</th>
+            <th>Time</th>
+            <th>Response</th>
+            <th>Operation</th>
           </tr>
         </thead>
         <tbody>
@@ -45,7 +45,7 @@
           <tr>
             <td>{{this.dname}}</td>
             <td>{{this.userName}}</td>
-            <td>{{this.rating}} 星</td>
+            <td>{{this.rating}} star</td>
             <td>{{this.comment}}</td>
             <td>{{this.createdAt}}</td>
 
@@ -53,44 +53,44 @@
               {{#if this.adminReply}}
                 <p>{{this.adminReply}}</p>
                 <small class="text-secondary">
-                  回复时间:
+                  Response time:
                   {{#if this.adminReplyCreatedAt}}
                     {{this.adminReplyCreatedAt}}
                   {{else}}
-                    未记录
+                    No recording
                   {{/if}}
                 </small>
-                <!-- 若我是这个反馈的用户 && adminReplyRead=false，则显示【未读】提示 -->
+                
                 {{#if (eq this.userId ../loginUser.id)}}
                   {{#if (eq this.adminReplyRead 0)}}
-                    <div class="text-danger">【管理员回复未读】</div>
+                    <div class="text-danger">Unread</div>
                   {{/if}}
                 {{/if}}
               {{else}}
-                <span class="text-muted">暂无回复</span>
+                <span class="text-muted">No response</span>
               {{/if}}
             </td>
-
+            <!--<button class="btn btn-sm btn-primary" onclick="window.location.href='/normalDashboard'">Back</button> -->
             <td>
-              <!-- 若我是管理员 => 显示回复或修改回复表单 -->
+              <!-- if I am admin -->
               {{#if (eq ../loginUser.type 'admin')}}
                 <button class="btn btn-sm btn-primary"
                         onclick="openReplyModal('{{this.id}}','{{this.adminReply}}')">
-                  回复
+                  Reply
                 </button>
               {{/if}}
 
-              <!-- 若我是该反馈的用户 -->
+              <!-- if I am member -->
                 {{#if (eq ../loginUser.type 'normal')}}
                 {{#if (eq this.userId ../loginUser.id)}}
                     {{#if this.adminReply}}
                     {{#if (eq this.adminReplyRead 0)}}
                         <button class="btn btn-sm btn-success"
                                 onclick="markReplyRead('{{this.id}}')">
-                        标记已读
+                        Read
                         </button>
                     {{else}}
-                        <span class="badge bg-secondary">已读</span>
+                        <span class="badge bg-secondary">Read</span>
                     {{/if}}
                     {{/if}}
                 {{/if}}
@@ -102,36 +102,36 @@
       </table>
 
       {{#unless feedbackList.length}}
-      <p class="text-center text-muted">暂时没有相关反馈</p>
+      <p class="text-center text-muted">No feedback</p>
       {{/unless}}
     </div>
   </section>
 
-  <!-- 管理员回复弹窗 -->
+  <!-- Admin reply -->
   <div class="modal fade" id="replyModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">管理员回复</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
+          <h5 class="modal-title">Response</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="close"></button>
         </div>
         <div class="modal-body">
           <input type="hidden" id="feedbackId">
           <div class="mb-3">
-            <label class="form-label">回复内容</label>
+            <label class="form-label">Reply content</label>
             <textarea class="form-control" rows="3" id="replyText"></textarea>
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-          <button class="btn btn-primary" onclick="submitReply()">提交</button>
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-primary" onclick="submitReply()">Submit</button>
         </div>
       </div>
     </div>
   </div>
 
 <script>
-  // 打开管理员回复的Modal
+  // Open reply modal
   function openReplyModal(fbId, existingReply) {
     document.getElementById('feedbackId').value = fbId;
     document.getElementById('replyText').value = existingReply || '';
@@ -139,12 +139,12 @@
     modal.show();
   }
 
-  // 提交管理员回复
+  // Submit reply
   async function submitReply() {
     const fbId = document.getElementById('feedbackId').value;
     const text = document.getElementById('replyText').value.trim();
     if(!text) {
-      Swal.fire('提示','请输入回复内容','info');
+      Swal.fire('Reminder','Please input information','info');
       return;
     }
     try {
@@ -156,19 +156,19 @@
       });
       const result = await resp.json();
       if(result.success) {
-        Swal.fire('成功', '回复已提交', 'success').then(()=>{
+        Swal.fire('Success', 'Submitted', 'success').then(()=>{
           window.location.reload();
         });
       } else {
-        Swal.fire('错误', result.message || '回复失败', 'error');
+        Swal.fire('Error', result.message || 'Failed', 'error');
       }
     } catch(e) {
       console.error(e);
-      Swal.fire('错误', '网络异常，请稍后再试','error');
+      Swal.fire('Error', 'Please try again','error');
     }
   }
 
-  // 普通用户标记回复已读
+  // member mark reply as read
   async function markReplyRead(fbId){
     try {
       const resp = await fetch('/feedbacks/markRead', {
@@ -178,15 +178,15 @@
       });
       const result = await resp.json();
       if(result.success){
-        Swal.fire('成功', '已标记为已读','success').then(()=>{
+        Swal.fire('Success', 'Mark as read','success').then(()=>{
           window.location.reload();
         });
       } else {
-        Swal.fire('错误', result.message || '标记失败','error');
+        Swal.fire('Error', result.message || 'Mark failed','error');
       }
     } catch(e){
       console.error(e);
-      Swal.fire('错误', '网络异常，请稍后再试','error');
+      Swal.fire('Error', 'Please try again','error');
     }
   }
 </script>

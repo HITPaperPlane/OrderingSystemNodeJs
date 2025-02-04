@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>登录 - 美食订餐</title>
+    <title>Login</title>
 </head>
 
 <body>
@@ -17,20 +17,20 @@
                     <div class="col-md-6 mt-5 mb-5">
                         <div class="register-form p-4 shadow">
                             <div class="text-center">
-                                <h2 class="primary-color">用户登录</h2>
+                                <h2 class="primary-color">Login to your Account</h2>
                             </div>
                             <form class="form" action="/loginUser" method="post">
                                 <div class="mx-2">
-                                    <input type="text" class="form-control mt-3" name="email" placeholder="请输入邮箱" required>
-                                    <input type="password" class="form-control mt-3" name="password" placeholder="请输入密码" required>
+                                    <input type="text" class="form-control mt-3" name="email" placeholder="Please enter email" required>
+                                    <input type="password" class="form-control mt-3" name="password" placeholder="Please enter password" required>
                                 </div>
                                 <div class="text-end">
-                                    <button type="submit" class="main-btn mt-3 mx-4 mb-1">登录</button>
+                                    <button type="submit" class="main-btn mt-3 mx-4 mb-1">LOG IN</button>
                                 </div>
                             </form>
 
                             <div class="mt-3 text-center">
-                              <small>还没有账号？ <a href="/register">前往注册</a></small>
+                              <small>New to Golden Bowl? <a href="/register">Register</a></small>
                             </div>
                         </div>
                     </div>
@@ -41,10 +41,10 @@
         {{#if invalid}}
         <script>
             Swal.fire({
-                title: '登录失败',
-                text: '邮箱或密码不正确，请重试。',
+                title: 'Login Failed',
+                text: 'Email or password is incorrect. Please try again.',
                 icon: 'error',
-                confirmButtonText: '好的'
+                confirmButtonText: 'OK'
             });
         </script>
         {{/if}}
@@ -52,9 +52,9 @@
         {{#if logout}}
         <script>
             Swal.fire({
-                title: '退出成功',
+                title: 'Logout Successfully',
                 icon: 'success',
-                confirmButtonText: '好的'
+                confirmButtonText: 'ok'
             });
         </script>
         {{/if}}
@@ -62,10 +62,10 @@
         {{#if loginFirst}}
         <script>
             Swal.fire({
-                title: '请先登录',
-                text: '您尚未登录，请先登录再访问。',
+                title: 'Please Login First',
+                text: 'Please login first to access the page.',
                 icon: 'info',
-                confirmButtonText: '好的'
+                confirmButtonText: 'ok'
             });
         </script>
         {{/if}}
@@ -73,10 +73,10 @@
         {{#if newRegister}}
         <script>
             Swal.fire({
-                title: '注册成功！',
-                text: '请使用您的邮箱和密码登录。',
+                title: 'Register Successfully',
+                text: 'Please login to access your account.',
                 icon: 'success',
-                confirmButtonText: '好的'
+                confirmButtonText: 'ok'
             });
         </script>
         {{/if}}

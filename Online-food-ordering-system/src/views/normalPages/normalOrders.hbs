@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>当前订单 - 美食订餐</title>
+    <title>Current Orders - Golden Bowl</title>
 </head>
 <body>
     {{> navbar loginUser=loginUser}}
@@ -13,23 +13,23 @@
 
             <div class="container userSection">
                 <div class="text-center mb-3">
-                    <h4>当前未完成订单</h4>
+                    <h4>Current Pending Orders</h4>
                 </div>
                 <div class="row">
                     {{#each orderFood}}
                     <div class="card mb-4">
                         <div class="row">
                             <div class="col-md-4">
-                                <img style="height:200px" src="/static/dishImages/{{this.photo}}" class="img-fluid p-3" alt="订单菜品">
+                                <img style="height:200px" src="/static/dishImages/{{this.photo}}" class="img-fluid p-3" alt="Order Dish">
                             </div>
                             <div class="col-md-8 py-3">
-                                <h5 class="text-primary">订单编号：{{this.id}}</h5>
-                                <p>菜名：{{this.dname}}</p>
-                                <p>价格：￥{{this.price}}</p>
-                                <p>数量：{{this.quantity}}</p>
-                                <p>状态：{{this.states}}</p>
-                                <p>取餐时间：{{this.pickupTime}}</p>
-                                <p>特殊需求：{{this.specialRequests}}</p>
+                                <h5 class="text-primary">Order NO: {{this.id}}</h5>
+                                <p>Dish Name: {{this.dname}}</p>
+                                <p>Price: ${{this.price}}</p>
+                                <p>Quantity: {{this.quantity}}</p>
+                                <p>Status: {{this.states}}</p>
+                                <p>Pickup Time: {{this.pickupTime}}</p>
+                                <p>Special Requests: {{this.specialRequests}}</p>
 
                                 <div class="text-end">
                                     {{#ifCancelOrder this.states this.id}}{{/ifCancelOrder}}
@@ -40,16 +40,16 @@
                     {{/each}}
                     {{#unless orderFood.length}}
                         <div class="text-center my-5">
-                            <h2 class="text-primary">您当前没有未完成的订单</h2>
+                            <h2 class="text-primary">You currently have no pending orders</h2>
                         </div>
                     {{/unless}}
 
                     {{#if cancelOrder}}
                     <script>
                         Swal.fire({
-                            title: '订单已取消',
+                            title: 'Order Cancelled',
                             icon: 'success',
-                            confirmButtonText: '好的'
+                            confirmButtonText: 'OK'
                         })
                     </script>
                     {{/if}}

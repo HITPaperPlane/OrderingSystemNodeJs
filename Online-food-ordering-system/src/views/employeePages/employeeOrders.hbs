@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>管理订单 - 员工</title>
+    <title>Manage Orders - Employee</title>
 </head>
 
 <body>
@@ -15,18 +15,18 @@
                 </div>
                 <div class="col-md-9">
                     <div class="card m-3 p-3">
-                        <h3 class="text-center mb-3">当前订单管理</h3>
+                        <h3 class="text-center mb-3">Current Order Management</h3>
                         <table class="table table-striped">
                             <thead>
                                 <tr>
-                                    <th>菜名</th>
-                                    <th>顾客姓名</th>
-                                    <th>价格(元)</th>
-                                    <th>数量</th>
-                                    <th>取餐时间</th>
-                                    <th>特殊需求</th>
-                                    <th>订单状态</th>
-                                    <th>操作</th>
+                                    <th>Dish Name</th>
+                                    <th>Customer Name</th>
+                                    <th>Price(NZD)</th>
+                                    <th>Quantity</th>
+                                    <th>Pickup Time</th>
+                                    <th>Special Requests</th>
+                                    <th>Order Status</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -41,11 +41,11 @@
                                     <td>{{this.states}}</td>
                                     <td>
                                         {{#if (eq this.states "NA")}}
-                                            <button class="btn btn-sm btn-success" onclick="updateStatus('{{this.id}}','in progress')">标记为进行中</button>
+                                            <button class="btn btn-sm btn-success" onclick="updateStatus('{{this.id}}','in progress')">Mark as In Progress</button>
                                         {{else if (eq this.states "Cooking")}}
-                                            <button class="btn btn-sm btn-warning" onclick="updateStatus('{{this.id}}','completed')">标记为完成</button>
+                                            <button class="btn btn-sm btn-warning" onclick="updateStatus('{{this.id}}','completed')">Mark as Completed</button>
                                         {{else}}
-                                            <span class="badge bg-secondary">已完成</span>
+                                            <span class="badge bg-secondary">Completed</span>
                                         {{/if}}
                                     </td>
                                 </tr>
@@ -83,12 +83,12 @@
     <script>
         function updateStatus(orderId, status) {
             Swal.fire({
-                title: '更新订单状态',
-                text: `确认将订单状态改为 "${status}" 吗？`,
+                title: 'Update Order Status',
+                text: `Are you sure you want to change the order status to "${status}"?`,
                 icon: 'question',
                 showCancelButton: true,
-                confirmButtonText: '确认',
-                cancelButtonText: '取消'
+                confirmButtonText: 'Yes',
+                cancelButtonText: 'No'
             }).then((result) => {
                 if (result.isConfirmed) {
                     $.ajax({
@@ -100,20 +100,20 @@
                         },
                         success: function (response) {
                             Swal.fire({
-                                title: '成功',
+                                title: 'Success',
                                 text: response.message,
                                 icon: 'success',
-                                confirmButtonText: '好的'
+                                confirmButtonText: 'OK'
                             }).then(() => {
                                 location.reload();
                             });
                         },
                         error: function (xhr) {
                             Swal.fire({
-                                title: '错误',
-                                text: xhr.responseJSON.message || '更新失败',
+                                title: 'Error',
+                                text: xhr.responseJSON.message || 'Update failed',
                                 icon: 'error',
-                                confirmButtonText: '好的'
+                                confirmButtonText: 'OK'
                             });
                         }
                     });

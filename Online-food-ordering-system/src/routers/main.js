@@ -4,6 +4,13 @@ const route = express.Router();
 const path = require('path');
 const fs = require('fs');
 const { pool } = require('../database'); // 若需要直接用 pool.query 统计
+// 引入axios
+const axios = require("axios");
+// 引入body-parser
+const bodyParser = require('body-parser');
+// 引入支付宝配置文件
+const { generateAlipayPaymentLink, checkAlipayPayment }  = require("../utils/alipay");
+
 // 数据模型
 const User = require('../modul/user');
 const Dish = require("../modul/dish");
@@ -159,6 +166,76 @@ route.get("/user/orderFood", (req, res) => {
     }
     res.render("normalPages/normalCheckout", { loginUser });
 });
+// route.post("/orderNowFromBasket", async (req, res) => {
+//     try {
+//         const loginUser = req.session.loginUser;
+//         if (!loginUser || loginUser.type !== 'normal') {
+//             return res.status(403).json({
+//                 message: "无权限下单。"
+//             });
+//         }
+
+//         // 确保 cartData 是一个有效的数组
+//         const basket = JSON.parse(req.body.cartData);
+//         if (!Array.isArray(basket)) {
+//             return res.status(400).json({ message: '购物车数据无效' });
+//         }
+
+//         const pickupTime = req.body.pickupTime || "";
+//         const specialRequests = req.body.specialRequests || "";
+//         const paymentType = req.body.paymentType || "online";
+
+//         // 检查库存
+//         for (const item of basket) {
+//             const dishRecord = await Dish.findById(item.id);
+//             if (!dishRecord) {
+//                 return res.status(400).json({
+//                     message: "有菜品不存在或已下架。"
+//                 });
+//             }
+//             if (dishRecord.dserve < item.quantity) {
+//                 return res.status(400).json({
+//                     message: `菜品【${dishRecord.dname}】库存不足，下单失败。`
+//                 });
+//             }
+//         }
+
+//         // 扣减库存 & 创建订单
+//         for (const item of basket) {
+//             const dishRecord = await Dish.findById(item.id);
+
+//             // 创建订单
+//             const orderData = {
+//                 dishId: dishRecord.id,   // 注意用id
+//                 userId: loginUser.id,
+//                 time: new Date(),        // 下单时间
+//                 pickupTime,
+//                 specialRequests,
+//                 photo: dishRecord.photo,
+//                 dname: dishRecord.dname,
+//                 price: dishRecord.dprice,
+//                 quantity: item.quantity,
+//                 paymentType,
+//                 states: "NA"
+//             };
+//             await Order.create(orderData);
+
+//             // 更新库存
+//             const newServe = dishRecord.dserve - item.quantity;
+//             await Dish.updateOne(dishRecord.id, { dserve: newServe });
+//         }
+
+//         return res.status(200).json({
+//             message: "订单创建成功！"
+//         });
+//     } catch (error) {
+//         console.error("下单错误详情:", error);
+//         return res.status(500).json({
+//             message: "下单失败，请重试。",
+//             error: error.message
+//         });
+//     }
+// });
 
 route.post("/orderNowFromBasket", async (req, res) => {
     try {
@@ -169,55 +246,50 @@ route.post("/orderNowFromBasket", async (req, res) => {
             });
         }
 
-        const basket = JSON.parse(req.body.data);
+        const basket = JSON.parse(req.body.cartData);
+        if (!Array.isArray(basket)) {
+            return res.status(400).json({ message: '购物车数据无效' });
+        }
+
         const pickupTime = req.body.pickupTime || "";
         const specialRequests = req.body.specialRequests || "";
         const paymentType = req.body.paymentType || "online";
 
-        // 检查库存
-        for (const item of basket) {
-            // item.id 为前端传递的 dishId
-            const dishRecord = await Dish.findById(item.id);
-            if (!dishRecord) {
-                return res.status(400).json({
-                    message: "有菜品不存在或已下架。"
-                });
+        // 到店支付，直接创建订单
+        if (paymentType === 'cash on delivery') {
+            for (const item of basket) {
+                const dishRecord = await Dish.findById(item.id);
+                if (!dishRecord) {
+                    return res.status(400).json({
+                        message: "有菜品不存在或已下架。"
+                    });
+                }
+
+                const orderData = {
+                    dishId: dishRecord.id, 
+                    userId: loginUser.id,
+                    time: new Date(), 
+                    pickupTime,
+                    specialRequests,
+                    photo: dishRecord.photo,
+                    dname: dishRecord.dname,
+                    price: dishRecord.dprice,
+                    quantity: item.quantity,
+                    paymentType,
+                    states: "NA"
+                };
+
+                await Order.create(orderData);
+
+                const newServe = dishRecord.dserve - item.quantity;
+                await Dish.updateOne(dishRecord.id, { dserve: newServe });
             }
-            if (dishRecord.dserve < item.quantity) {
-                return res.status(400).json({
-                    message: `菜品【${dishRecord.dname}】库存不足，下单失败。`
-                });
-            }
+
+            return res.status(200).json({ message: "订单创建成功！" });
         }
 
-        // 扣减库存 & 创建订单
-        for (const item of basket) {
-            const dishRecord = await Dish.findById(item.id);
-
-            // 1) 创建订单
-            const orderData = {
-                dishId: dishRecord.id,   // 注意用id
-                userId: loginUser.id,
-                time: new Date(),        // 下单时间
-                pickupTime,
-                specialRequests,
-                photo: dishRecord.photo,
-                dname: dishRecord.dname,
-                price: dishRecord.dprice,
-                quantity: item.quantity,
-                paymentType,
-                states: "NA"
-            };
-            await Order.create(orderData);
-
-            // 2) 更新库存
-            const newServe = dishRecord.dserve - item.quantity;
-            await Dish.updateOne(dishRecord.id, { dserve: newServe });
-        }
-
-        return res.status(200).json({
-            message: "订单创建成功！"
-        });
+        // 在线支付逻辑交由 generatePaymentLink 路由处理
+        res.status(400).json({ message: '支付方式不支持' });
     } catch (error) {
         console.error("下单错误详情:", error);
         return res.status(500).json({
@@ -226,6 +298,94 @@ route.post("/orderNowFromBasket", async (req, res) => {
         });
     }
 });
+
+route.post("/generatePaymentLink", async (req, res) => {
+    try {
+        const loginUser = req.session.loginUser;
+        if (!loginUser || loginUser.type !== 'normal') {
+            return res.status(403).json({
+                message: "无权限下单。"
+            });
+        }
+
+        const cartData = JSON.parse(req.body.cartData);
+        const pickupTime = req.body.pickupTime || "";
+        const specialRequests = req.body.specialRequests || "";
+
+        const orderId = Date.now().toString(); // 生成唯一的订单ID
+
+        // 计算实际支付价格
+        let totalPrice = 0;
+        for (const item of cartData) {
+            const dishRecord = await Dish.findById(item.id);
+            if (dishRecord) {
+                const actualPrice = dishRecord.dprice * (1 - dishRecord.ddiscount / 100);
+                totalPrice += actualPrice * item.quantity;
+            }
+        }
+
+        // 调用支付宝支付链接生成函数
+        const paymentLink = await generateAlipayPaymentLink(orderId, totalPrice.toFixed(2), "美食订餐");
+
+        // 存储订单信息，等待支付完成后处理
+        global.pendingOrders = global.pendingOrders || {};
+        global.pendingOrders[orderId] = {
+            cartData,
+            pickupTime,
+            specialRequests,
+            totalPrice
+        };
+
+        res.status(200).json({ orderId, paymentLink });
+    } catch (error) {
+        console.error("生成支付链接时出错:", error);
+        res.status(500).json({ message: '生成支付链接失败', error: error.message });
+    }
+});
+
+route.post("/checkPaymentStatus", async (req, res) => {
+    try {
+        const { orderId } = req.body;
+        if (!orderId || !global.pendingOrders[orderId]) {
+            return res.status(400).json({ message: "无效的订单ID" });
+        }
+
+        // 查询支付状态
+        const isPaid = await checkAlipayPayment(orderId);
+        if (isPaid) {
+            const orderData = global.pendingOrders[orderId];
+            for (const item of orderData.cartData) {
+                const dishRecord = await Dish.findById(item.id);
+                const orderEntry = {
+                    dishId: dishRecord.id,
+                    userId: req.session.loginUser.id,
+                    time: new Date(),
+                    pickupTime: orderData.pickupTime,
+                    specialRequests: orderData.specialRequests,
+                    photo: dishRecord.photo,
+                    dname: dishRecord.dname,
+                    price: dishRecord.dprice,
+                    quantity: item.quantity,
+                    paymentType: 'online',
+                    states: 'NA'
+                };
+                await Order.create(orderEntry);
+
+                const newServe = dishRecord.dserve - item.quantity;
+                await Dish.updateOne(dishRecord.id, { dserve: newServe });
+            }
+
+            delete global.pendingOrders[orderId];
+            return res.status(200).json({ paymentStatus: 'success' });
+        } else {
+            return res.status(200).json({ paymentStatus: 'failed' });
+        }
+    } catch (error) {
+        console.error("支付状态查询失败:", error);
+        res.status(500).json({ message: "支付状态查询失败", error: error.message });
+    }
+});
+
 
 /**
  * member(普通用户) - 当前订单 / 取消订单 / 订单历史

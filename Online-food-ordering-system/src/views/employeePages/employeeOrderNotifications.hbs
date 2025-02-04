@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>订单通知 - 员工</title>
+    <title>Order Notifications - Employee</title>
 </head>
 
 <body>
@@ -15,21 +15,21 @@
                 </div>
                 <div class="col-md-9">
                     <div class="card m-3 p-3">
-                        <h3 class="text-center">订单通知</h3>
+                        <h3 class="text-center">Order Notifications</h3>
                         <div class="notification-section">
                             {{#each orders}}
                             <div class="card mb-3">
                                 <div class="card-body">
                                     <h5 class="card-title">{{this.dname}} - {{this.user.name}}</h5>
                                     <p class="card-text">
-                                        <strong>价格：</strong> ￥{{this.price}} <br>
-                                        <strong>数量：</strong> {{this.quantity}} <br>
-                                        <strong>取餐时间：</strong> {{this.pickupTime}} <br>
-                                        <strong>特殊需求：</strong> <span style="color: red; font-weight: bold;">{{this.specialRequests}}</span> <br>
-                                        <strong>订单状态：</strong> {{this.states}}
+                                        <strong>Price:</strong> ￥{{this.price}} <br>
+                                        <strong>Quantity:</strong> {{this.quantity}} <br>
+                                        <strong>Pickup Time:</strong> {{this.pickupTime}} <br>
+                                        <strong>Special Requests:</strong> <span style="color: red; font-weight: bold;">{{this.specialRequests}}</span> <br>
+                                        <strong>Order Status:</strong> {{this.states}}
                                     </p>
-                                    <button class="btn btn-sm btn-success" onclick="markInProgress('{{this.id}}')">标记为进行中</button>
-                                    <button class="btn btn-sm btn-danger" onclick="markCompleted('{{this.id}}')">标记为已完成</button>
+                                    <button class="btn btn-sm btn-success" onclick="markInProgress('{{this.id}}')">Mark as In Progress</button>
+                                    <button class="btn btn-sm btn-danger" onclick="markCompleted('{{this.id}}')">Mark as Completed</button>
                                 </div>
                             </div>
                             {{/each}}
@@ -43,12 +43,12 @@
     <script>
         function markInProgress(orderId) {
             Swal.fire({
-                title: '标记为进行中？',
-                text: "确认将此订单标记为进行中吗？",
+                title: 'Mark as In Progress?',
+                text: "Are you sure you want to mark this order as In Progress?",
                 icon: 'question',
                 showCancelButton: true,
-                confirmButtonText: '确定',
-                cancelButtonText: '取消'
+                confirmButtonText: 'Yes',
+                cancelButtonText: 'No'
             }).then((result) => {
                 if (result.isConfirmed) {
                     $.ajax({
@@ -56,12 +56,12 @@
                         url: '/employee/updateOrderStatus',
                         data: { orderId: orderId, status: 'in progress' },
                         success: function (response) {
-                            Swal.fire('已更新', response.message, 'success').then(() => {
+                            Swal.fire('Updated', response.message, 'success').then(() => {
                                 location.reload();
                             });
                         },
                         error: function (xhr) {
-                            Swal.fire('错误', xhr.responseJSON.message, 'error');
+                            Swal.fire('Error', xhr.responseJSON.message, 'error');
                         }
                     });
                 }
@@ -70,12 +70,12 @@
 
         function markCompleted(orderId) {
             Swal.fire({
-                title: '标记为完成？',
-                text: "确认将此订单标记为完成吗？",
+                title: 'Mark as Completed?',
+                text: "Are you sure you want to mark this order as completed?",
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonText: '确定',
-                cancelButtonText: '取消'
+                confirmButtonText: 'Yes',
+                cancelButtonText: 'No'
             }).then((result) => {
                 if (result.isConfirmed) {
                     $.ajax({
@@ -83,12 +83,12 @@
                         url: '/employee/updateOrderStatus',
                         data: { orderId: orderId, status: 'completed' },
                         success: function (response) {
-                            Swal.fire('已完成', response.message, 'success').then(() => {
+                            Swal.fire('Completed', response.message, 'success').then(() => {
                                 location.reload();
                             });
                         },
                         error: function (xhr) {
-                            Swal.fire('错误', xhr.responseJSON.message, 'error');
+                            Swal.fire('Error', xhr.responseJSON.message, 'error');
                         }
                     });
                 }

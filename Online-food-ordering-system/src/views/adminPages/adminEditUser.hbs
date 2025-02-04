@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>编辑用户资料 - 管理员</title>
+    <title>Edit Profile - Admin</title>
 </head>
 <body>
 {{> navbar loginUser=loginUser}}
@@ -16,51 +16,51 @@
       <div class="col-md-9">
         <div class="card m-3 p-3">
           <div class="d-flex align-items-center mb-3">
-            <h4 class="flex-grow-1">编辑用户资料</h4>
-            <a href="/admin/users" class="btn btn-sm btn-secondary">返回列表</a>
+            <h4 class="flex-grow-1">Edit profile</h4>
+            <a href="/admin/users" class="btn btn-sm btn-secondary">Return</a>
           </div>
           <hr>
 
           <form action="/admin/saveUser/{{targetUser.id}}" method="POST" enctype="multipart/form-data">
             <div class="mb-3">
-              <label class="form-label">姓名</label>
+              <label class="form-label">Name</label>
               <input type="text" class="form-control" name="name" value="{{targetUser.name}}" required>
             </div>
             <div class="mb-3">
-              <label class="form-label">邮箱</label>
+              <label class="form-label">Email</label>
               <input type="email" class="form-control" name="email" value="{{targetUser.email}}" required>
             </div>
             <div class="mb-3">
-              <label class="form-label">电话</label>
+              <label class="form-label">Phone number</label>
               <input type="text" class="form-control" name="phone" value="{{targetUser.phone}}" required>
             </div>
             <div class="mb-3">
-              <label class="form-label">密码</label>
+              <label class="form-label">Password</label>
               <input type="text" class="form-control" name="password" value="{{targetUser.password}}" required>
             </div>
             <div class="mb-3">
-              <label class="form-label">地址</label>
+              <label class="form-label">Address</label>
               <textarea class="form-control" rows="2" name="address" required>{{targetUser.address}}</textarea>
             </div>
             <div class="mb-3">
-              <label class="form-label">角色</label>
+              <label class="form-label">Role</label>
               <select name="type" class="form-select">
-                <option value="normal" {{#if (eq targetUser.type 'normal')}}selected{{/if}}>normal(会员)</option>
-                <option value="admin" {{#if (eq targetUser.type 'admin')}}selected{{/if}}>admin(管理员)</option>
-                <option value="employee" {{#if (eq targetUser.type 'employee')}}selected{{/if}}>employee(员工)</option>
+                <option value="normal" {{#if (eq targetUser.type 'normal')}}selected{{/if}}>normal(member)</option>
+                <option value="admin" {{#if (eq targetUser.type 'admin')}}selected{{/if}}>admin(manager)</option>
+                <option value="employee" {{#if (eq targetUser.type 'employee')}}selected{{/if}}>employee(staff)</option>
               </select>
             </div>
             <div class="mb-3">
-              <label class="form-label">头像</label>
+              <label class="form-label">Photo</label>
               <input type="file" class="form-control" name="photo">
               {{#if targetUser.photo}}
                 <img src="/static/userImages/{{targetUser.photo}}" alt="用户头像" style="width:80px; height:80px; margin-top:8px; border-radius:50%;">
               {{else}}
-                <p class="text-muted mt-2">暂无头像</p>
+                <p class="text-muted mt-2">No photo</p>
               {{/if}}
             </div>
 
-            <button type="submit" class="btn btn-success">保存修改</button>
+            <button type="submit" class="btn btn-success">Save</button>
           </form>
         </div>
       </div>

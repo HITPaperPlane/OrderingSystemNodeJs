@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>添加新菜品 - 管理员</title>
+    <title>Add New Dishes - Admin</title>
 </head>
 
 <body>
@@ -13,52 +13,52 @@
     <section>
         <div class="container-fluid">
             <div class="row">
-                <!-- 侧边栏 -->
+                <!-- side bar -->
                 <div class="col-md-3">
                     {{> sidebar}}
                 </div>
                 <div class="col-md-9">
                     <div class="card m-3 p-3">
-                        <h4 class="text-center">添加新菜品</h4>
+                        <h4 class="text-center">Add new dishes</h4>
                         <div class="row">
                             <div class="col-md-8 offset-md-2">
                                 <form action="/saveDish" method="post" enctype="multipart/form-data" class="p-3 shadow">
-                                    <input name="dname" type="text" class="form-control my-2" placeholder="菜品名称" required>
-                                    <input name="dtype" type="text" class="form-control my-2" placeholder="菜品类型，如：主食、甜点等" required>
+                                    <input name="dname" type="text" class="form-control my-2" placeholder="dish name" required>
+                                    <input name="dtype" type="text" class="form-control my-2" placeholder="dish type" required>
 
                                     <div class="row">
                                         <div class="col-md-6">
-                                            <input name="dprice" type="number" step="0.01" class="form-control my-2" placeholder="价格 (元)" required>
+                                            <input name="dprice" type="number" step="0.01" class="form-control my-2" placeholder="price (NZD)" required>
                                         </div>
                                         <div class="col-md-6">
-                                            <input name="dserve" type="number" class="form-control my-2" placeholder="可供应份数" required>
+                                            <input name="dserve" type="number" class="form-control my-2" placeholder="total" required>
                                         </div>
                                     </div>
                                     <div class="row">
                                         <div class="col-md-6">
-                                            <input name="dtime" type="text" class="form-control my-2" placeholder="烹饪时间 (分钟)">
+                                            <input name="dtime" type="text" class="form-control my-2" placeholder="cooking time (mins)">
                                         </div>
                                         <div class="col-md-6">
-                                            <input name="ddiscount" type="number" class="form-control my-2" placeholder="折扣 (0-100之间)">
+                                            <input name="ddiscount" type="number" class="form-control my-2" placeholder="discount (0-100之间)">
                                         </div>
                                     </div>
 
-                                    <label class="my-2" for="photo">菜品图片：</label>
+                                    <label class="my-2" for="photo">Picture: </label>
                                     <input type="file" name="photo" id="photo" required>
 
-                                    <textarea class="form-control my-2" name="discription" rows="3" placeholder="菜品描述，如主要原料、口味等"></textarea>
+                                    <textarea class="form-control my-2" name="discription" rows="3" placeholder="Description"></textarea>
 
                                     <div class="text-end">
-                                        <button class="main-btn my-2 mx-2">提交</button>
+                                        <button class="main-btn my-2 mx-2">Submit</button>
                                     </div>
 
                                     {{#if save}}
                                     <script>
                                         Swal.fire({
-                                            title: '成功',
-                                            text: '新菜品已添加！',
+                                            title: 'Success',
+                                            text: 'New dish has been saved successfully!',
                                             icon: 'success',
-                                            confirmButtonText: '好的'
+                                            confirmButtonText: 'OK'
                                         })
                                     </script>
                                     {{/if}}
@@ -66,10 +66,10 @@
                                     {{#if notsave}}
                                     <script>
                                         Swal.fire({
-                                            title: '出错',
-                                            text: '请检查表单信息或图片文件，未能成功保存。',
+                                            title: 'Error',
+                                            text: 'Please try again!',
                                             icon: 'error',
-                                            confirmButtonText: '好的'
+                                            confirmButtonText: 'OK'
                                         })
                                     </script>
                                     {{/if}}

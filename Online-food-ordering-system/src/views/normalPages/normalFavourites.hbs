@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>我的收藏 - 美食订餐</title>
+  <title>My Favorites - Golden Bowl</title>
 </head>
 <body>
   {{> navbar loginUser=loginUser}}
@@ -12,35 +12,35 @@
       {{> userBar}}
 
       <div class="container">
-        <h4 class="mt-3">我的收藏</h4>
+        <h4 class="mt-3">My Favorites</h4>
         <hr>
 
         <div class="row">
           {{#each favDishes}}
           <div class="col-md-4 mb-4">
             <div class="card">
-              <img style="height:210px" src="/static/dishImages/{{this.photo}}" class="card-img-top" alt="收藏菜图">
+              <img style="height:210px" src="/static/dishImages/{{this.photo}}" class="card-img-top" alt="Favorite Dish Image">
               <div class="card-body">
                 <h5 class="card-title">{{this.dname}}</h5>
                 <p class="card-text">
-                  价格：￥{{this.dprice}} <br>
-                  烹饪时间：{{this.dtime}} 分钟 <br>
-                  描述：{{this.discription}}
+                  Price: ${{this.dprice}} <br>
+                  Cooking Time: {{this.dtime}} mins <br>
+                  Description: {{this.discription}}
                 </p>
                 <div class="d-flex justify-content-end flex-wrap" style="gap:8px;">
                   {{#if (eq this.dserve 0)}}
-                    <button class="main-btn" disabled>已售罄</button>
+                    <button class="main-btn" disabled>Sold Out</button>
                   {{else}}
                     <button 
                       onclick="addFoodToBasket('{{this.id}}','{{this.dname}}','{{this.dprice}}','{{this.photo}}')"
                       class="main-btn"
                     >
-                      加入购物车
+                      Add to Cart
                     </button>
                   {{/if}}
 
                   <button class="white-btn2" onclick="window.location.href='/feedbacks?dishId={{this.id}}'">
-                    查看反馈
+                    View Feedback
                   </button>
                 </div>
               </div>
@@ -50,7 +50,7 @@
 
           {{#unless favDishes.length}}
           <div class="text-center">
-            <p>暂无收藏的菜品。</p>
+            <p>No favorite dishes yet.</p>
           </div>
           {{/unless}}
         </div>

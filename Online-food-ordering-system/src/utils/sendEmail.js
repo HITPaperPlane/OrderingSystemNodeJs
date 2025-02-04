@@ -1,6 +1,6 @@
 const nodemailer = require('nodemailer');
 const path = require('path');
-
+// 用协议沟通服务器
 // 创建一个 SMTP 传输对象
 const transporter = nodemailer.createTransport({
   service: 'gmail', 

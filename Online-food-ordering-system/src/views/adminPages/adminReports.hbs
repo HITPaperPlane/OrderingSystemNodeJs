@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <title>统计报告 - 管理员</title>
+  <title>Report - Admin</title>
 </head>
 <body>
   {{> navbar loginUser=loginUser}}
@@ -16,23 +16,23 @@
         <div class="col-md-9">
           <div class="card m-3 p-3">
             <div class="d-flex align-items-center mb-3">
-              <h4 class="flex-grow-1">订餐统计报告</h4>
-              <a href="/dashboard" class="btn btn-sm btn-secondary">返回仪表盘</a>
+              <h4 class="flex-grow-1">Report</h4>
+              <a href="/dashboard" class="btn btn-sm btn-secondary">Back</a>
             </div>
             <hr>
 
-            <p>报告周期： 
-              {{#if (eq reportData.period 'week')}}过去 7 天
-              {{else}}过去 30 天
+            <p>Report period: 
+              {{#if (eq reportData.period 'week')}}Past 7 days
+              {{else}}Past 30 days
               {{/if}}
             </p>
-            <p>订单数量：{{reportData.totalOrders}} 单</p>
-            <p>总销售额：￥{{reportData.totalSales}}</p>
-            <p>最热门菜品：{{reportData.popularDish}} (总销量 {{reportData.popularDishQuantity}} 份)</p>
+            <p>Amount: {{reportData.totalOrders}} 单</p>
+            <p>Total sales: ${{reportData.totalSales}}</p>
+            <p>Most popular: {{reportData.popularDish}} (总销量 {{reportData.popularDishQuantity}} 份)</p>
 
             <div class="mt-3">
-              <a href="/admin/reports?period=week" class="btn btn-info btn-sm">查看周报</a>
-              <a href="/admin/reports?period=month" class="btn btn-info btn-sm">查看月报</a>
+              <a href="/admin/reports?period=week" class="btn btn-info btn-sm">Weekly</a>
+              <a href="/admin/reports?period=month" class="btn btn-info btn-sm">Monthly</a>
             </div>
           </div>
         </div>

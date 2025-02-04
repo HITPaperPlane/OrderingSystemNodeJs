@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Test</title>
+</head>
+<body>
+    <h1>Payment Testing Page</h1>
+
+    <!-- Form to initiate payment -->
+    <form id="paymentForm">
+        <label for="orderId">Order ID:</label>
+        <input type="text" id="orderId" required><br><br>
+
+        <label for="price">Price:</label>
+        <input type="text" id="price" required><br><br>
+
+        <label for="name">Product Name:</label>
+        <input type="text" id="name" required><br><br>
+
+        <button type="submit">Proceed to Payment</button>
+    </form>
+
+    <h2>Payment Status</h2>
+    <div id="paymentStatus"></div>
+
+    <script>
+        document.getElementById('paymentForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            // Collect form data
+            const orderId = document.getElementById('orderId').value;
+            const price = document.getElementById('price').value;
+            const name = document.getElementById('name').value;
+
+            // Send data to backend for payment initiation
+            fetch('/payment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ orderId, price, name })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const paymentUrl = data.paymentUrl;
+                    document.getElementById('paymentStatus').innerHTML = `<a href="${paymentUrl}" target="_blank">Click here to complete payment</a>`;
+                } else {
+                    document.getElementById('paymentStatus').innerText = "Error initiating payment.";
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('paymentStatus').innerText = "An error occurred while processing the payment.";
+            });
+        });
+    </script>
+    <h1>订单查询</h1>
+
+    <!-- 查询表单 -->
+    <form id="queryForm">
+        <label for="out_trade_no">订单号 (out_trade_no):</label>
+        <input type="text" id="out_trade_no" name="out_trade_no" required>
+        <button type="submit">查询订单状态</button>
+    </form>
+
+    <!-- 显示查询结果 -->
+    <h2>查询结果</h2>
+    <div id="queryResult"></div>
+
+    <script>
+        document.getElementById('queryForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            // 获取用户输入的订单号
+            const out_trade_no = document.getElementById('out_trade_no').value;
+
+            // 发送POST请求到后端的 /paymentQuery 接口
+            fetch('/paymentQuery', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ out_trade_no })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // 处理后端返回的查询结果
+                const resultDiv = document.getElementById('queryResult');
+                if (data.code === 10001) {
+                    resultDiv.innerText = '支付宝有交易记录，但未付款。';
+                } else if (data.code === 10002) {
+                    resultDiv.innerText = '交易完成。';
+                } else if (data.code === 10003) {
+                    resultDiv.innerText = '交易关闭。';
+                } else if (data.code === 40004) {
+                    resultDiv.innerText = '交易不存在。';
+                } else {
+                    resultDiv.innerText = '查询失败，请稍后重试。';
+                }
+            })
+            .catch(error => {
+                console.error('查询出错:', error);
+                document.getElementById('queryResult').innerText = '查询过程中发生错误，请稍后重试。';
+            });
+        });
+    </script>
+</body>
+</html>

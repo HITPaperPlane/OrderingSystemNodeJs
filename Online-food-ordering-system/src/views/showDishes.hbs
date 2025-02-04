@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <title>浏览菜品 - 美食订餐</title>
+  <title>Menu</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 </head>
 <body>
@@ -10,20 +10,20 @@
 
   <section class="container-fluid">
     <div class="container">
-      <!-- 搜索框 -->
+      <!-- search -->
       <form action="/searchFood" method="post">
         <div class="row search-panel">
           <div class="col-md-5 offset-md-3 mt-4">
             <input
               value="{{searchKey}}"
-              placeholder="搜索菜品，例如：汉堡、沙拉"
+              placeholder="Searching for dishes"
               class="form-control"
               type="text"
               name="foodSearch"
             />
           </div>
           <div class="col-md-1 text-center mt-4">
-            <button type="submit" class="white-btn2">搜索</button>
+            <button type="submit" class="white-btn2">Search</button>
           </div>
         </div>
       </form>
@@ -42,7 +42,7 @@
             />
             <h4 class="p-2">{{this.dname}}</h4>
             <p class="text-color px-2">
-              烹饪时间：{{this.dtime}} 分钟 | 可供应份数：{{this.dserve}}
+              Cooking time: {{this.dtime}} MINS | Amount: {{this.dserve}}
             </p>
             <h2 class="primary-color mb-3 px-2">
               ￥{{#discount this.dprice this.ddiscount}}{{/discount}}
@@ -52,22 +52,21 @@
 
             <div class="px-2 pb-2">
               {{#if (eq this.dserve 0)}}
-                <button class="main-btn" disabled>已售罄</button>
+                <button class="main-btn" disabled>Out of stock</button>
               {{else}}
                 <button
                   onclick="addFoodToBasket('{{this.id}}','{{this.dname}}','{{this.dprice}}','{{this.photo}}')"
-                  class="main-btn"
-                >
-                  加入购物车
+                  class="main-btn">
+                  Add 
                 </button>
               {{/if}}
               
               <button class="white-btn2 ms-2" onclick="handleFavourite('{{this.id}}')">
-                收藏
+                Wishlist
               </button>
 
               <button class="white-btn2 ms-2" onclick="window.location.href='/feedbacks?dishId={{this.id}}'">
-                查看反馈
+                Feedback
               </button>
             </div>
           </div>
@@ -75,7 +74,7 @@
         {{/each}}
       </div>
 
-      <!-- 分页 -->
+   
       <nav aria-label="Page navigation" class="mt-3 mb-5">
         <ul class="pagination justify-content-end">
           <li class="page-item">
@@ -117,18 +116,18 @@
       if (userType === 'none') {
         Swal.fire({
           icon: 'info',
-          title: '请先登录',
-          text: '登录后才可收藏菜品。',
-          confirmButtonText: '好的'
+          title: 'Please log in',
+          text: 'Please log in to add dishes to your favourites.',
+          confirmButtonText: 'ok'
         });
         return;
       }
       if (userType !== 'normal') {
         Swal.fire({
           icon: 'warning',
-          title: '无权限收藏',
-          text: '只有普通用户可以收藏菜品。',
-          confirmButtonText: '好的'
+          title: 'No permission',
+          text: 'Only members can add dishes to favourites.',
+          confirmButtonText: 'ok'
         });
         return;
       }
@@ -145,26 +144,26 @@
         if (result.success) {
           Swal.fire({
             icon: 'success',
-            title: '收藏成功',
+            title: 'Successfully added to favourites',
             text: result.message,
-            confirmButtonText: '好的'
+            confirmButtonText: 'ok'
           }).then(() => {
             window.location.reload();
           });
         } else {
           Swal.fire({
             icon: 'error',
-            title: '收藏失败',
-            text: result.message || '请稍后再试。',
-            confirmButtonText: '好的'
+            title: 'Failed to add to favourites',
+            text: result.message || 'Please try again later.',
+            confirmButtonText: 'OK'
           });
         }
       } catch (err) {
         Swal.fire({
           icon: 'error',
-          title: '收藏失败',
-          text: err.message || '请稍后再试。',
-          confirmButtonText: '好的'
+          title: 'Failed to add to favourites',
+          text: err.message || 'Please try again later.',
+          confirmButtonText: 'OK' 
         });
       }
     }

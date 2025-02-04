@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>周报 - 销售报告</title>
+    <title>Weekly - Sales Report</title>
 </head>
 <body>
 {{> navbar loginUser=loginUser}}
@@ -15,13 +15,13 @@
       </div>
       <div class="col-md-9">
         <div class="card m-3 p-3">
-          <h3>周报 - 销售报告</h3>
+          <h3>Weekly - Sales Report</h3>
           <hr>
 
-          <p>统计范围：最近 7 天</p>
-          <p>订单总数：{{totalOrders}} 单</p>
-          <p>总销售额：￥{{totalSales}}</p>
-          <p>平均客单价：￥{{avgSales}}</p>
+          <p>Range: Recently 7 days</p>
+          <p>Total: {{totalOrders}} </p>
+          <p>Total Sales: ${{totalSales}}</p>
+          <p>Average: ${{avgSales}}</p>
 
         </div>
       </div>

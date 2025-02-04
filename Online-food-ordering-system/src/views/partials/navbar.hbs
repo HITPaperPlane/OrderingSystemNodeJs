@@ -14,15 +14,15 @@
     </button>
     <div class="collapse navbar-collapse" id="navbarSupportedContent">
       <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
-        <!-- 首页 -->
+        <!-- Homepage -->
         <li class="nav-item">
-          <a class="nav-link" href="/">首页</a>
+          <a class="nav-link" href="/">Home</a>
         </li>
-        <!-- 菜品 -->
+        <!-- menu -->
         <li class="nav-item">
-          <a class="nav-link" href="/foods/1">浏览菜品</a>
+          <a class="nav-link" href="/foods/1">Menu</a>
         </li>
-        <!-- 购物车 -->
+        <!-- shopping cart -->
         <li class="nav-item">
           <a class="nav-link" data-bs-toggle="modal" data-bs-target="#staticBackdrop">
             <i class="fas fa-shopping-basket"></i>
@@ -30,17 +30,17 @@
           </a>
         </li>
         {{#if loginUser}}
-        <!-- 如果已登录，展示用户名 -->
+        <!-- if login, show the user name -->
         <li class="nav-item">
           <a class="nav-link" href="/dashboard">{{loginUser.name}}</a>
         </li>
         {{else}}
         <!-- 未登录 -->
         <li class="nav-item">
-          <a class="nav-link" href="/register">注册</a>
+          <a class="nav-link" href="/register">Register</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="/login">登录</a>
+          <a class="nav-link" href="/login">Login</a>
         </li>
         {{/if}}
       </ul>
@@ -56,18 +56,18 @@
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">您的购物车</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
+        <h5 class="modal-title">Shopping cart</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="close"></button>
       </div>
       <div class="modal-body cart-body">
-        <!-- 购物车物品通过JS动态渲染 -->
+       
       </div>
       <div class="modal-footer">
         {{#if loginUser}}
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
-        <a href="/user/orderFood" type="button" class="btn btn-primary checkout-btn">去结算</a>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <a href="/user/orderFood" type="button" class="btn btn-primary checkout-btn">Proceed to checkout</a>
         {{else}}
-        <small class="text-danger">请先登录后再进行结算</small>
+        <small class="text-danger">Please login first.</small>
         {{/if}}
       </div>
     </div>

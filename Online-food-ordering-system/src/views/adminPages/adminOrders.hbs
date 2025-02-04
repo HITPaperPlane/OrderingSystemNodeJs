@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>所有订单 - 管理员</title>
+    <title>Orders - Admin</title>
 </head>
 
 <body>
@@ -16,21 +16,21 @@
                 </div>
                 <div class="col-md-9">
                     <div class="card m-3 p-3">
-                        <h4 class="text-center">所有用户订单</h4>
+                        <h4 class="text-center">All orders</h4>
                         <hr>
                         <table class="table table-hover table-striped">
                             <thead>
                                 <tr>
-                                    <th>菜名</th>
-                                    <th>下单用户</th>
-                                    <th>价格(元)</th>
-                                    <th>数量</th>
-                                    <th>收货地址</th>
-                                    <th>取餐时间</th>
-                                    <th>特殊需求</th>
-                                    <th>状态更新</th>
-                                    <th>评分</th>
-                                    <th>评论</th>
+                                    <th>Name</th>
+                                    <th>User</th>
+                                    <th>Price(NZD)</th>
+                                    <th>Quantity</th>
+                                    <th>Address</th>
+                                    <th>Pickup Time</th>
+                                    <th>Comstomize</th>
+                                    <th>Status</th>
+                                    <th>Rating</th>
+                                    <th>Comment</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -48,14 +48,14 @@
                                         {{#if this.feedback}}
                                             {{this.feedback.rating}} 星
                                         {{else}}
-                                            暂无评分
+                                            No rating
                                         {{/if}}
                                     </td>
                                     <td>
                                         {{#if this.feedback}}
                                             {{this.feedback.comment}}
                                         {{else}}
-                                            暂无评价
+                                            No comment
                                         {{/if}}
                                     </td>
                                 </tr>

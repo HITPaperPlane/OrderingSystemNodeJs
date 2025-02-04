@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>管理用户 - 管理员</title>
+    <title>User Management - Admin</title>
 </head>
 <body>
     {{> navbar loginUser=loginUser}}
@@ -16,25 +16,25 @@
                 <div class="col-md-9">
                     <div class="card m-3 p-3">
                         <div class="d-flex align-items-center">
-                            <h4 class="flex-grow-1">用户列表</h4>
-                            <a class="btn btn-sm btn-secondary" href="/dashboard">返回仪表盘</a>
+                            <h4 class="flex-grow-1">Users</h4>
+                            <a class="btn btn-sm btn-secondary" href="/dashboard">Back</a>
                         </div>
                         <hr>
 
                         {{#if editSuccess}}
-                        <div class="alert alert-success">用户资料已更新。</div>
+                        <div class="alert alert-success">Users profiles updated</div>
                         {{/if}}
 
                         <table class="table table-striped">
                             <thead>
                                 <tr>
-                                    <th>头像</th>
-                                    <th>姓名</th>
-                                    <th>邮箱</th>
-                                    <th>电话</th>
-                                    <th>地址</th>
-                                    <th>角色</th>
-                                    <th>操作</th>
+                                    <th>Photo</th>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Phone Number</th>
+                                    <th>Address</th>
+                                    <th>Role</th>
+                                    <th>Operation</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -42,9 +42,9 @@
                                 <tr>
                                     <td>
                                         {{#if this.photo}}
-                                        <img src="/static/userImages/{{this.photo}}" style="width:50px; height:50px; border-radius:50%;" alt="头像">
+                                        <img src="/static/userImages/{{this.photo}}" style="width:50px; height:50px; border-radius:50%;" alt="photo">
                                         {{else}}
-                                        <img src="/static/image/review/review-1.jpg" style="width:50px; height:50px; border-radius:50%;" alt="无头像">
+                                        <img src="/static/image/review/review-1.jpg" style="width:50px; height:50px; border-radius:50%;" alt="no photo">
                                         {{/if}}
                                     </td>
                                     <td>{{this.name}}</td>
@@ -53,15 +53,15 @@
                                     <td>{{this.address}}</td>
                                     <td>{{this.type}}</td>
                                     <td>
-                                        <!-- 管理员可以编辑用户 -->
-                                        <a class="btn btn-sm btn-warning" href="/admin/editUser/{{this.id}}">编辑</a>
+                                        <!-- edit user profiles -->
+                                        <a class="btn btn-sm btn-warning" href="/admin/editUser/{{this.id}}">Edit</a>
                                     </td>
                                 </tr>
                                 {{/each}}
                             </tbody>
                         </table>
                         {{#unless users.length}}
-                        <p>暂无用户</p>
+                        <p>No matching</p>
                         {{/unless}}
                     </div>
                 </div>

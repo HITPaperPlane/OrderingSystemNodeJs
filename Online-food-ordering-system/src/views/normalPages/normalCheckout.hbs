@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>确认下单 - 美食订餐</title>
+    <title>Confirm Order - Golden Bowl</title>
 </head>
 <body>
     {{> navbar loginUser=loginUser}}
@@ -15,40 +15,47 @@
             <div class="container userSection">
                 <div class="row">
                     <div class="col-md-3">
-                        <h4>支付方式</h4>
+                        <h4>Payment Method</h4>
                         <div class="form-check">
                             <input class="form-check-input" type="radio" name="paymentType" id="offline" value="cash on delivery">
                             <label class="form-check-label" for="offline">
-                                到店付款
+                                 Pay at Store
                             </label>
                         </div>
                         <div class="form-check">
                             <input class="form-check-input" type="radio" name="paymentType" id="online" value="online">
                             <label class="form-check-label" for="online">
-                                在线支付
+                                Online Payment
                             </label>
                         </div>
 
-                        <h4 class="mt-4">取餐时间</h4>
+                        <h4 class="mt-4">Pickup Time</h4>
                         <input type="datetime-local" id="pickupTime" class="form-control" name="pickupTime" required>
 
-                        <h4 class="mt-4">特殊需求</h4>
-                        <textarea id="specialRequests" class="form-control" name="specialRequests" rows="3" placeholder="如：不要辣、加辣、过敏原等"></textarea>
+                        <h4 class="mt-4">Special Requests</h4>
+                        <textarea id="specialRequests" class="form-control" name="specialRequests" rows="3" placeholder="E.g.: No spicy, extra spicy, allergens"></textarea>
                     </div>
 
                     <div class="col-md-9">
                         <div class="card mb-3 px-3 py-3">
-                            <h4>收货信息</h4>
-                            <p>姓名：{{loginUser.name}}</p>
-                            <p>手机号：{{loginUser.phone}}</p>
-                            <p>收货地址：{{loginUser.address}}</p>
+                            <h4>Delivery Information</h4>
+                            <p>Name: {{loginUser.name}}</p>
+                            <p>Phone: {{loginUser.phone}}</p>
+                            <p>Address: {{loginUser.address}}</p>
                         </div>
                         <div class="card">
                             <div class="card-body cart-body">
-                                <!-- 购物车项目会通过JS渲染 -->
+                                <!-- Cart items will be rendered via JavaScript -->
                             </div>
                             <div class="text-end p-3">
-                                <button onclick="placeOrder()" class="main-btn">提交订单</button>
+                                <button onclick="placeOrder()" class="main-btn">Submit</button>
+
+                                <!-- New section for payment link and verification  -->
+                                <div id="paymentDetails" style="display: none;">
+                                    <p>Please click the link below to complete the payment:</p>
+                                    <a id="paymentLink" href="#" target="_blank">Payment Link</a>
+                                    <button id="verifyPayment" onclick="checkPayment()" class="main-btn" style="display: none;">Verify Payment</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -57,14 +64,16 @@
         </div>
 
         <script>
+            let orderId = null;
+
             function placeOrder() {
                 const cartData = localStorage.getItem('cart');
                 const paymentType = $('input[name="paymentType"]:checked').val();
                 const pickupTime = $('#pickupTime').val();
                 const specialRequests = $('#specialRequests').val();
 
-                // 添加调试日志
-                console.log('提交的数据:', {
+                // Debugging log
+                console.log('Submitted data:', {
                     cartData,
                     paymentType,
                     pickupTime,
@@ -73,69 +82,130 @@
 
                 if (!paymentType) {
                     Swal.fire({
-                        title: '请选择支付方式',
+                        title: 'Please select a payment method',
                         icon: 'warning',
-                        confirmButtonText: '好的'
+                        confirmButtonText: 'OK'
                     });
                     return;
                 }
 
                 if (!pickupTime) {
                     Swal.fire({
-                        title: '请选择取餐时间',
+                        title: 'Please select a pickup time',
                         icon: 'warning',
-                        confirmButtonText: '好的'
+                        confirmButtonText: 'OK'
                     });
                     return;
                 }
 
-                if (cartData) {
+                if (paymentType === 'online') {
+                    // Online payment: generate order ID and request payment link
                     $.ajax({
                         type: 'POST',
-                        url: '/orderNowFromBasket',
+                        url: '/generatePaymentLink',
                         data: {
-                            data: cartData,
-                            paymentType: paymentType,
+                            cartData: cartData,
                             pickupTime: pickupTime,
                             specialRequests: specialRequests
                         },
                         success: function (data) {
-                            console.log('下单成功响应:', data);
-                            localStorage.removeItem('cart');
-                            Swal.fire({
-                                title: '下单成功',
-                                text: '您的订单已提交，请等待餐厅处理。',
-                                icon: 'success',
-                                confirmButtonText: '好的'
-                            }).then(() => {
-                                window.location.href = "/";
-                            });
+                            orderId = data.orderId;
+                            const paymentLink = data.paymentLink;
+
+                            // Show payment link and verification button
+                            $('#paymentDetails').show();
+                            $('#paymentLink').attr('href', paymentLink);
+                            $('#verifyPayment').show();
                         },
                         error: function (xhr) {
-                            // 添加更详细的错误信息
-                            console.error('下单失败:', {
-                                status: xhr.status,
-                                statusText: xhr.statusText,
-                                responseText: xhr.responseText,
-                                responseJSON: xhr.responseJSON
-                            });
+                            console.error('Failed to generate payment link:', xhr);
                             Swal.fire({
-                                title: '下单失败',
-                                text: xhr.responseJSON?.message || '请稍后再试',
+                                title: 'Payment link generation failed',
                                 icon: 'error',
-                                confirmButtonText: '好的'
+                                confirmButtonText: 'OK'
                             });
                         }
                     });
                 } else {
-                    console.log('购物车为空');
-                    Swal.fire({
-                        title: '购物车为空',
-                        text: '请先选择菜品再下单。',
-                        icon: 'info',
-                        confirmButtonText: '好的'
-                    });
+                    // Cash on delivery logic
+                    placeOrderInDatabase(cartData, paymentType, pickupTime, specialRequests);
                 }
+            }
+
+            function placeOrderInDatabase(cartData, paymentType, pickupTime, specialRequests) {
+                $.ajax({
+                    type: 'POST',
+                    url: '/orderNowFromBasket',
+                    data: {
+                        cartData: cartData,
+                        paymentType: paymentType,
+                        pickupTime: pickupTime,
+                        specialRequests: specialRequests
+                    },
+                    success: function (data) {
+                        console.log('Order placed successfully:', data);
+                        localStorage.removeItem('cart');
+                        Swal.fire({
+                            title: 'Order Successful',
+                            text: 'Your order has been submitted. Please wait for the restaurant to process it.',
+                            icon: 'success',
+                            confirmButtonText: 'OK'
+                        }).then(() => {
+                            window.location.href = "/";
+                        });
+                    },
+                    error: function (xhr) {
+                        console.error('Order failed:', xhr);
+                        Swal.fire({
+                            title: 'Order Failed',
+                            text: xhr.responseJSON?.message || 'Please try again later',
+                            icon: 'error',
+                            confirmButtonText: 'OK'
+                        });
+                    }
+                });
+            }
+
+            function checkPayment() {
+                if (!orderId) {
+                    Swal.fire({
+                        title: 'Invalid Order ID',
+                        icon: 'error',
+                        confirmButtonText: 'OK'
+                    });
+                    return;
+                }
+
+                $.ajax({
+                    type: 'POST',
+                    url: '/checkPaymentStatus',
+                    data: { orderId: orderId },
+                    success: function (data) {
+                        if (data.paymentStatus === 'success') {
+                            Swal.fire({
+                                title: 'Payment Successful',
+                                icon: 'success',
+                                confirmButtonText: 'OK'
+                            }).then(() => {
+                                window.location.href = "/";
+                            });
+                        } else {
+                            Swal.fire({
+                                title: 'Payment Not Completed',
+                                icon: 'warning',
+                                confirmButtonText: 'OK'
+                            });
+                        }
+                    },
+                    error: function (xhr) {
+                        console.error('Payment status check failed:', xhr);
+                        Swal.fire({
+                            title: 'Payment Status Check Failed',
+                            icon: 'error',
+                            confirmButtonText: 'OK'
+                        });
+                    }
+                });
             }
         </script>
     </section>
